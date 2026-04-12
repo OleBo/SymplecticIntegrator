@@ -1,0 +1,26 @@
+# Build context files to exclude
+.git
+.gitignore
+.DS_Store
+build/
+*.o
+*.so
+*.a
+*.exe
+*.dll
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+venv/
+data/**/*.csv
+data/**/*.npy
+.env
