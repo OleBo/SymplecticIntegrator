@@ -20,9 +20,9 @@ jobs:
           sudo apt-get install -y build-essential cmake
 
       - name: Setup CUDA toolkit
-        uses: nvidia/setup-cuda@v2
+        uses: Jimver/cuda-toolkit@v0.2.35
         with:
-          cuda-version: '12.2'
+          cuda: '12.2.0'
 
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
