@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # CUDA settings
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -arch=sm_70")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -arch=sm_75")
 
 # Include directories
 include_directories(${PROJECT_SOURCE_DIR}/include)
@@ -39,6 +39,6 @@ enable_testing()
 add_subdirectory(tests EXCLUDE_FROM_ALL)
 
 # Print configuration
-message(STATUS "GPU Architecture: sm_70")
-message(STATUS "CUDA Compute Capability: 7.0")
+message(STATUS "GPU Architecture: sm_75")
+message(STATUS "CUDA Compute Capability: 7.5")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
