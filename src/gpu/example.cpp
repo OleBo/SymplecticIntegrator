@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <cuda_runtime.h>
 #include "henon_heiles.h"
 #include "integrators.h"
@@ -36,7 +37,7 @@ int main(int argc, char* argv[]) {
     printf("Configuration:\n");
     printf("  Trajectories: %d\n", n_trajectories);
     printf("  Steps: %d\n", n_steps);
-    printf("  Timestep: %f\n", n_steps);
+    printf("  Timestep: %f\n", dt);
     printf("  Total time: %f\n\n", n_steps * dt);
     
     // Allocate host memory

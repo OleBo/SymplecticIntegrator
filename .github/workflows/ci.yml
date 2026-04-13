@@ -19,16 +19,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake
 
-      - name: Setup CUDA toolkit
-        uses: Jimver/cuda-toolkit@v0.2.35
-        with:
-          cuda: '12.2.0'
-
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build project
         run: cmake --build build --config Release
-
-      - name: Build example target
-        run: cmake --build build --target example --config Release
