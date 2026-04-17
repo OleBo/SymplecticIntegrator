@@ -1,4 +1,5 @@
 # 🚀 GPU-Accelerated Symplectic Integrator
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://olebo.github.io/SymplecticIntegrator) 
 [![CI](https://github.com/OleBo/SymplecticIntegrator/actions/workflows/ci.yml/badge.svg)](https://github.com/OleBo/SymplecticIntegrator/actions/workflows/ci.yml)
 ## Structure-Preserving Simulation on GPUs
 
