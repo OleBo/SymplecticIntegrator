@@ -1,3 +1,8 @@
+---
+title: Containerization
+nav_order: 40
+---
+
 # 🐳 Containerization Complete!
 
 ## Project Fully Containerized ✨

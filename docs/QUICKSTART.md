@@ -1,3 +1,8 @@
+---
+title: Quick Start
+nav_order: 20
+---
+
 # Quick Start Guide
 
 ## 🚀 Get Started in 5 Minutes

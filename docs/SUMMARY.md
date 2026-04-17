@@ -1,3 +1,8 @@
+---
+title: Executive Summary
+nav_order: 20
+---
+
 # GPU-Accelerated Symplectic Integrator - Executive Summary
 
 ## The Problem

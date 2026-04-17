@@ -1,3 +1,8 @@
+---
+title: Docker Setup
+nav_order: 42
+---
+
 # Docker Setup Guide
 
 ## Overview

@@ -1,3 +1,7 @@
+---
+title: Manifest
+nav_order: 50
+---
 # Project Manifest - GPU-Accelerated Symplectic Integrator
 
 ## Complete File Listing

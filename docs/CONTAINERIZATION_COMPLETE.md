@@ -1,3 +1,8 @@
+---
+title: Containerization Full Summary
+nav_order: 41
+---
+
 # Containerization Complete - Full Summary
 
 ## 📦 What Was Added

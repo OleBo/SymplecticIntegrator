@@ -1,3 +1,8 @@
+---
+title: Architecture & Implementation
+nav_order: 5
+---
+
 # Project Architecture & Implementation Guide
 
 ## Overview
