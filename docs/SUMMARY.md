@@ -57,31 +57,14 @@ Speedup: 100-1000x
 
 When simulating the **Hénon-Heiles chaotic system** for 10,000 timesteps:
 
-```
-┌─────────────────────────────────────────────────────┐
-│ ENERGY CONSERVATION COMPARISON                      │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│ Energy Error (log scale)                            │
-│  ^                                                  │
-│  |                                         Euler ❌ │
-│  |     exponential growth                          │
-│  |                                                  │
-│ 1|  ╱╱╱╱╱╱╱                                         │
-│  | ╱╱ RK4 ❌                                       │
-│  |╱ (linear drift)                                 │
-│0.1                                                  │
-│  |_____ Symplectic ✅                              │
-│  |     (bounded oscillation)                        │
-│  |                                                  │
-│0.01                                                 │
-│  |                                                  │
-│ 0 └──────────────────────────────────────────────→  │
-│   0    2000   4000   6000   8000  10000  timesteps  │
-│                                                     │
-│ Conclusion: Only symplectic stays stable           │
-└─────────────────────────────────────────────────────┘
-```
+[![Energy Conservation Comparison](assets/images/energy_conservation_comparison.png)](notebooks/energy_conservation_comparison.ipynb)
+
+
+Here's what the results indicate:
+
+- Euler Method (diverged at timestep 5182): As expected, the Euler method shows a rapid increase in energy error, diverging relatively quickly. This is characteristic of explicit non-symplectic integrators when applied to Hamiltonian systems over long times.
+- Runge-Kutta 4 (RK4, ran for full 10,000 timesteps): The RK4 method provides significantly better energy conservation than Euler. Its energy error remains much smaller, although you can observe a gradual, but slow, drift in energy over the entire simulation period.
+- Symplectic Integrator (ran for full 10,000 timesteps): The symplectic integrator demonstrates the best energy conservation among the three. Its energy error remains bounded and oscillates around a very small value throughout the simulation. This highlights the advantage of symplectic integrators in preserving the long-term energy properties of Hamiltonian systems, even though individual steps might not be as accurate as RK4 in terms of local error.
 
 ## Technical Highlights
 
