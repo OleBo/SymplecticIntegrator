@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'docs/notebooks/**'    # Trigger only when files in code/ change
+      - 'docs/notebooks/**'    # Trigger only when files in notebooks/ change
       - '.github/workflows/**' # Allow workflow updates to trigger too
   workflow_dispatch:          # Allow manual triggering
 
@@ -38,7 +38,7 @@ jobs:
 
       - name: Build JupyterLite site
         run: |
-          jupyter lite build --contents code --output-dir jupyterlite
+          jupyter lite build --contents docs/notebooks --output-dir jupyterlite
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
