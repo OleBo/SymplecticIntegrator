@@ -1,0 +1,57 @@
+{
+  "content": [
+    {
+      "content": null,
+      "created": "2026-04-18T10:47:59.759273Z",
+      "format": null,
+      "hash": null,
+      "hash_algorithm": null,
+      "last_modified": "2026-04-18T10:47:03.805151Z",
+      "mimetype": null,
+      "name": "01_cpu_benchmark.ipynb",
+      "path": "01_cpu_benchmark.ipynb",
+      "size": 6631,
+      "type": "notebook",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2026-04-18T10:47:59.760197Z",
+      "format": null,
+      "hash": null,
+      "hash_algorithm": null,
+      "last_modified": "2026-04-18T10:47:03.806679Z",
+      "mimetype": null,
+      "name": "nvcc.ipynb",
+      "path": "nvcc.ipynb",
+      "size": 137160,
+      "type": "notebook",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2026-04-18T10:47:59.759645Z",
+      "format": null,
+      "hash": null,
+      "hash_algorithm": null,
+      "last_modified": "2026-04-18T10:47:03.806393Z",
+      "mimetype": null,
+      "name": "energy_conservation_comparison.ipynb",
+      "path": "energy_conservation_comparison.ipynb",
+      "size": 135849,
+      "type": "notebook",
+      "writable": true
+    }
+  ],
+  "created": "2026-04-18T10:47:59.760197Z",
+  "format": "json",
+  "hash": null,
+  "hash_algorithm": null,
+  "last_modified": "2026-04-18T10:47:59.760197Z",
+  "mimetype": null,
+  "name": "",
+  "path": "",
+  "size": null,
+  "type": "directory",
+  "writable": true
+}
