@@ -35,10 +35,11 @@ jobs:
 
       - name: Build Jekyll 🧪
         run: |
-          # Build your Jekyll site from the /docs folder into the same /dist directory
-          # Uses [GitHub Actions for Jekyll](https://jekyllrb.com/docs/continuous-integration/github-actions/)
+          # Move into the docs folder where the Gemfile is located
+          cd docs
           bundle install
-          bundle exec jekyll build --source docs --destination dist
+          # Build the site into the dist directory at the root level
+          bundle exec jekyll build --destination ../dist
 
       - name: Deploy to GitHub Pages 🚀
         uses: JamesIves/github-pages-deploy-action@v4
