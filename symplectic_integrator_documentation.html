@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Mathematical Foundations | Symplectic Integrator on GPUs</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Mathematical Foundations" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:site_name" content="Symplectic Integrator on GPUs" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Mathematical Foundations" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"Demonstrating mathematical integrity under GPU parallelization and reduced precision.","headline":"Mathematical Foundations","url":"/symplectic_integrator_documentation.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=3866f225d98a6c78601d54880f9b5186278e53d4">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+    <script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    }
+  };
+</script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Symplectic Integrator on GPUs</a></h1>
+
+        
+
+        <p>Demonstrating mathematical integrity under GPU parallelization and reduced precision.</p>
+
+        
+        <p class="view"><a href="https://github.com/OleBo/SymplecticIntegrator">View the Project on GitHub <small>OleBo/SymplecticIntegrator</small></a></p>
+        
+
+        
+
+        
+        <nav>
+  <ul>
+    
+    
+      
+    
+      
+    
+      
+        <li>
+          <a href="/">Home</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/symplectic_integrator_documentation.html">Mathematical Foundations</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/benchmark_experiment_documentation.html">Benchmark Experiments</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/cuda_implementation_documentation.html">CUDA Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/ARCHITECTURE.html">Architecture & Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/TODO.html">ToDo</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/QUICKSTART.html">Quick Start</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/SUMMARY.html">Executive Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/README_CONTAINERIZATION.html">Containerization</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/CONTAINERIZATION_COMPLETE.html">Containerization Full Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER.html">Docker Setup</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER_QUICK_REFERENCE.html">Quick Reference</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/MANIFEST.html">Manifest</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+      </header>
+      <section>
+
+      <h1 id="gpu-accelerated-symplectic-integrator--mathematical-documentation">GPU-Accelerated Symplectic Integrator — Mathematical Documentation</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>This document explains the <strong>mathematical foundations</strong> and <strong>numerical methods</strong> implemented in this project, with a focus on:</p>
+
+<ul>
+  <li>Hamiltonian dynamics</li>
+  <li>The Hénon–Heiles system</li>
+  <li>Structure-preserving (symplectic) integration</li>
+  <li>GPU-parallel execution</li>
+</ul>
+
+<p>The goal is to simulate nonlinear dynamical systems <strong>faithfully over long time horizons</strong>, where naive high-accuracy methods often fail.</p>
+
+<hr />
+
+<h2 id="1-hamiltonian-mechanics">1. Hamiltonian Mechanics</h2>
+
+<h3 id="11-phase-space">1.1 Phase Space</h3>
+
+<p>The system evolves in a <strong>4-dimensional phase space</strong>:</p>
+
+<p>[
+(q, p) = (x, y, p_x, p_y)
+]</p>
+
+<ul>
+  <li>(q = (x, y)): position</li>
+  <li>(p = (p_x, p_y)): momentum</li>
+</ul>
+
+<h4 id="phase-space-trajectory">Phase Space Trajectory</h4>
+
+<p><img src="/assets/images/phase_space.png" alt="Phase Space" /></p>
+
+<p>This shows the trajectory in configuration space ((x, y)). For chaotic regimes, the trajectory explores complex regions of phase space.</p>
+
+<hr />
+
+<h3 id="12-hamiltonian-function">1.2 Hamiltonian Function</h3>
+
+<p>The total energy of the system is:</p>
+
+<p>[
+H(x,y,p_x,p_y) = T(p) + V(x,y)
+]</p>
+
+<p>with:</p>
+
+<ul>
+  <li>
+    <p>Kinetic energy:
+[
+T = \frac{1}{2}(p_x^2 + p_y^2)
+]</p>
+  </li>
+  <li>
+    <p>Potential energy (Hénon–Heiles):
+[
+V(x,y) = \frac{1}{2}(x^2 + y^2) + x^2 y - \frac{1}{3} y^3
+]</p>
+  </li>
+</ul>
+
+<hr />
+
+<h3 id="13-equations-of-motion">1.3 Equations of Motion</h3>
+
+<p>Hamilton’s equations:</p>
+
+<p>[
+\dot{x} = p_x, \quad \dot{y} = p_y
+]
+[
+\dot{p}_x = -\frac{\partial V}{\partial x}, \quad
+\dot{p}_y = -\frac{\partial V}{\partial y}
+]</p>
+
+<hr />
+
+<h3 id="14-gradient-of-the-potential">1.4 Gradient of the Potential</h3>
+
+<p>[
+\frac{\partial V}{\partial x} = x + 2xy
+]
+[
+\frac{\partial V}{\partial y} = y + x^2 - y^2
+]</p>
+
+<p>These are computed in the CUDA device function:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>compute_gradients(x, y, grad_x, grad_y)
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="2-geometry-of-hamiltonian-systems">2. Geometry of Hamiltonian Systems</h2>
+
+<p>Hamiltonian systems have special structure:</p>
+
+<h3 id="21-phase-space-flow">2.1 Phase Space Flow</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        p
+        ↑
+        │        trajectories follow level sets of H
+        │     ⟲      ⟲       ⟲
+        │   ⟲    ⟲       ⟲
+        │ ⟲
+        └──────────────→ q
+</code></pre></div></div>
+
+<ul>
+  <li>Motion stays on constant-energy surfaces</li>
+  <li>Flow is <strong>volume-preserving</strong> (Liouville’s theorem)</li>
+</ul>
+
+<hr />
+
+<h3 id="22-key-invariants">2.2 Key Invariants</h3>
+
+<ul>
+  <li>Energy (H) is conserved</li>
+  <li>Phase-space volume is conserved</li>
+  <li>Trajectories lie on manifolds</li>
+</ul>
+
+<hr />
+
+<h2 id="3-numerical-integration-challenge">3. Numerical Integration Challenge</h2>
+
+<p>Standard methods (e.g., RK4):</p>
+
+<ul>
+  <li>Minimize local truncation error</li>
+  <li><strong>Destroy global structure</strong></li>
+</ul>
+
+<p>Result:</p>
+
+<h2 id="energy-conservation">Energy Conservation</h2>
+
+<p><img src="/assets/images/energy_plot.png" alt="Energy Plot" /></p>
+
+<p>The symplectic integrator preserves energy up to bounded oscillations, demonstrating long-term stability.</p>
+
+<hr />
+
+<h2 id="4-symplectic-integrator-leapfrog--verlet">4. Symplectic Integrator (Leapfrog / Verlet)</h2>
+
+<h3 id="41-algorithm">4.1 Algorithm</h3>
+
+<p>The symplectic method splits updates into <strong>half-step momentum and full-step position</strong>:</p>
+
+<p>[
+p_{n+1/2} = p_n - \frac{\Delta t}{2} \nabla V(q_n)
+]</p>
+
+<p>[
+q_{n+1} = q_n + \Delta t , p_{n+1/2}
+]</p>
+
+<p>[
+p_{n+1} = p_{n+1/2} - \frac{\Delta t}{2} \nabla V(q_{n+1})
+]</p>
+
+<hr />
+
+<h3 id="42-geometric-interpretation">4.2 Geometric Interpretation</h3>
+
+<p>Instead of approximating the trajectory directly, we approximate the <strong>flow map</strong>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Step splitting:
+
+[Kick] → [Drift] → [Kick]
+
+p ----&gt; p_half ----&gt; p_next
+   \        |
+    \       |
+     \      v
+       q --------&gt; q_next
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="43-why-it-works">4.3 Why It Works</h3>
+
+<p>Symplectic integrators preserve:</p>
+
+<ul>
+  <li>Phase-space structure</li>
+  <li>Symplectic 2-form</li>
+  <li>Long-term qualitative behavior</li>
+</ul>
+
+<hr />
+
+<h3 id="44-energy-behavior">4.4 Energy Behavior</h3>
+
+<p>Instead of drifting:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Energy vs Time (Symplectic)
+
+E
+│   ~~~~~~~~
+│  ~        ~
+│ ~          ~
+│~            ~
+└────────────── t
+</code></pre></div></div>
+
+<p>Energy error is:</p>
+
+<p>[
+H(t) = H(0) + \mathcal{O}(\Delta t^2)
+]</p>
+
+<p>but remains <strong>bounded</strong>.</p>
+
+<hr />
+
+<h2 id="5-comparison-of-integrators">5. Comparison of Integrators</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Order</th>
+      <th>Symplectic</th>
+      <th>Energy Behavior</th>
+      <th>Long-Term Stability</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Euler</td>
+      <td>1</td>
+      <td>❌</td>
+      <td>Diverges</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td>RK4</td>
+      <td>4</td>
+      <td>❌</td>
+      <td>Drifts slowly</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td>Leapfrog</td>
+      <td>2</td>
+      <td>✅</td>
+      <td>Oscillatory, bounded</td>
+      <td>✅</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="6-cuda-parallelization-model">6. CUDA Parallelization Model</h2>
+
+<h3 id="61-problem-structure">6.1 Problem Structure</h3>
+
+<p>Each trajectory evolves independently:</p>
+
+<p>[
+z_i(t) \rightarrow z_i(t + \Delta t)
+]</p>
+
+<hr />
+
+<h3 id="62-gpu-mapping">6.2 GPU Mapping</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Thread i  →  trajectory i
+
+(x[i], y[i], px[i], py[i])
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="63-memory-layout">6.3 Memory Layout</h3>
+
+<p>Structure of Arrays (SoA):</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>x:   [x0 x1 x2 x3 ...]
+y:   [y0 y1 y2 y3 ...]
+px:  [p0 p1 p2 p3 ...]
+py:  [p0 p1 p2 p3 ...]
+</code></pre></div></div>
+
+<p>Benefits:</p>
+
+<ul>
+  <li>Coalesced memory access</li>
+  <li>High bandwidth utilization</li>
+</ul>
+
+<hr />
+
+<h3 id="64-kernel-execution">6.4 Kernel Execution</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>integrator_kernel&lt;&lt;&lt;grid, block&gt;&gt;&gt;(...)
+</code></pre></div></div>
+
+<p>Each thread performs:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for step in time:
+    symplectic_update()
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="7-energy-diagnostics">7. Energy Diagnostics</h2>
+
+<p>Energy is computed as:</p>
+
+<p>[
+E_i = \frac{1}{2}(p_x^2 + p_y^2) + V(x,y)
+]</p>
+
+<p>Used for:</p>
+
+<ul>
+  <li>Verifying correctness</li>
+  <li>Comparing integrators</li>
+  <li>Detecting numerical instability</li>
+</ul>
+
+<hr />
+
+<h2 id="8-key-insight">8. Key Insight</h2>
+
+<blockquote>
+  <p>High-order accuracy is not enough for physical simulation.</p>
+</blockquote>
+
+<ul>
+  <li>RK4: accurate trajectory locally, wrong globally</li>
+  <li>Symplectic: slightly less accurate locally, <strong>correct physics globally</strong></li>
+</ul>
+
+<hr />
+
+<h2 id="9-extensions">9. Extensions</h2>
+
+<h3 id="91-higher-order-symplectic-methods">9.1 Higher-Order Symplectic Methods</h3>
+
+<ul>
+  <li>Yoshida integrators</li>
+  <li>Forest–Ruth splitting</li>
+</ul>
+
+<hr />
+
+<h3 id="92-advanced-analysis">9.2 Advanced Analysis</h3>
+
+<ul>
+  <li>Poincaré sections</li>
+  <li>Lyapunov exponents</li>
+  <li>Chaos detection</li>
+</ul>
+
+<hr />
+
+<h3 id="93-hpc-extensions">9.3 HPC Extensions</h3>
+
+<ul>
+  <li>Mixed precision (FP32/FP64 hybrid)</li>
+  <li>Multi-GPU scaling</li>
+  <li>Adaptive batching</li>
+</ul>
+
+<hr />
+
+<h2 id="10-summary">10. Summary</h2>
+
+<p>This project demonstrates:</p>
+
+<ul>
+  <li>How <strong>Hamiltonian structure</strong> drives algorithm choice</li>
+  <li>Why <strong>symplectic integrators are essential</strong></li>
+  <li>How GPUs enable <strong>massively parallel trajectory simulation</strong></li>
+</ul>
+
+<hr />
+
+<h2 id="11-minimal-conceptual-diagram">11. Minimal Conceptual Diagram</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Hamiltonian System
+        ↓
+Equations of Motion
+        ↓
+Discretization Choice
+        ↓
+ ┌───────────────┬─────────────────┐
+ │ Standard ODE  │ Symplectic      │
+ │ Methods       │ Integrators     │
+ ├───────────────┼─────────────────┤
+ │ RK4           │ Leapfrog        │
+ │ High accuracy │ Structure-pres. │
+ │ Energy drift  │ Energy bounded  │
+ └───────────────┴─────────────────┘
+        ↓
+GPU Parallel Execution
+        ↓
+Millions of trajectories
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="final-remark">Final Remark</h2>
+
+<p>This codebase is a compact example of a deep principle:</p>
+
+<blockquote>
+  <p><strong>Preserving mathematical structure is often more important than minimizing numerical error.</strong></p>
+</blockquote>
+
+<p>This is especially true in:</p>
+
+<ul>
+  <li>Computational physics</li>
+  <li>Molecular dynamics</li>
+  <li>Celestial mechanics</li>
+  <li>Long-term dynamical simulations</li>
+</ul>
+
+<hr />
+
+
+      </section>
+      <footer>
+        
+        <p>This project is maintained by <a href="https://github.com/OleBo">OleBo</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>

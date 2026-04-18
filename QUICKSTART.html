@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Quick Start | Symplectic Integrator on GPUs</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Quick Start" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:site_name" content="Symplectic Integrator on GPUs" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Quick Start" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"Demonstrating mathematical integrity under GPU parallelization and reduced precision.","headline":"Quick Start","url":"/QUICKSTART.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=3866f225d98a6c78601d54880f9b5186278e53d4">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+    <script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    }
+  };
+</script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Symplectic Integrator on GPUs</a></h1>
+
+        
+
+        <p>Demonstrating mathematical integrity under GPU parallelization and reduced precision.</p>
+
+        
+        <p class="view"><a href="https://github.com/OleBo/SymplecticIntegrator">View the Project on GitHub <small>OleBo/SymplecticIntegrator</small></a></p>
+        
+
+        
+
+        
+        <nav>
+  <ul>
+    
+    
+      
+    
+      
+    
+      
+        <li>
+          <a href="/">Home</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/symplectic_integrator_documentation.html">Mathematical Foundations</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/benchmark_experiment_documentation.html">Benchmark Experiments</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/cuda_implementation_documentation.html">CUDA Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/ARCHITECTURE.html">Architecture & Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/TODO.html">ToDo</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/QUICKSTART.html">Quick Start</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/SUMMARY.html">Executive Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/README_CONTAINERIZATION.html">Containerization</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/CONTAINERIZATION_COMPLETE.html">Containerization Full Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER.html">Docker Setup</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER_QUICK_REFERENCE.html">Quick Reference</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/MANIFEST.html">Manifest</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+      </header>
+      <section>
+
+      <h1 id="quick-start-guide">Quick Start Guide</h1>
+
+<h2 id="-get-started-in-5-minutes">🚀 Get Started in 5 Minutes</h2>
+
+<h3 id="prerequisites">Prerequisites</h3>
+
+<ul>
+  <li><strong>CPU Baseline:</strong>
+    <ul>
+      <li>Python 3.8+</li>
+      <li>NumPy, SciPy, Matplotlib</li>
+    </ul>
+  </li>
+  <li><strong>GPU (CUDA):</strong>
+    <ul>
+      <li>CUDA Toolkit 11.0+</li>
+      <li>CMake 3.18+</li>
+      <li>GPU with compute capability ≥ 7.0</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="step-1-install-python-dependencies">Step 1: Install Python Dependencies</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip <span class="nb">install</span> <span class="nt">-r</span> requirements.txt
+</code></pre></div></div>
+
+<h3 id="step-2-run-cpu-benchmark">Step 2: Run CPU Benchmark</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>src/cpu
+python benchmark.py
+</code></pre></div></div>
+
+<p><strong>Output:</strong></p>
+<ul>
+  <li>Timing comparison</li>
+  <li>Energy drift statistics</li>
+  <li>Plot: <code class="language-plaintext highlighter-rouge">data/energy_drift_comparison.png</code></li>
+</ul>
+
+<h3 id="step-3-analyze-results">Step 3: Analyze Results</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>notebooks
+jupyter notebook 01_cpu_benchmark.ipynb
+</code></pre></div></div>
+
+<p>This notebook shows:</p>
+<ul>
+  <li>✅ Energy preservation of symplectic integrator</li>
+  <li>❌ Energy explosion in Euler method</li>
+  <li>⚠️ Energy drift in RK4 method</li>
+</ul>
+
+<h3 id="step-4-optional-build-gpu-kernels">Step 4 (Optional): Build GPU Kernels</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir </span>build <span class="o">&amp;&amp;</span> <span class="nb">cd </span>build
+cmake ..
+make
+</code></pre></div></div>
+
+<p>Requires CUDA toolkit.</p>
+
+<hr />
+
+<h2 id="-expected-results">📊 Expected Results</h2>
+
+<h3 id="cpu-benchmark-output">CPU Benchmark Output</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>======================================================================
+GPU-ACCELERATED SYMPLECTIC INTEGRATOR - CPU BASELINE BENCHMARK
+======================================================================
+Configuration:
+  Trajectories: 100
+  Steps: 10000
+  Timestep: 0.001
+  Total time: 10.00
+  System: Henon-Heiles (chaotic regime)
+
+--- Euler Integrator ---
+  Time: X.XXXs
+  Initial Energy: 0.XXXXXX
+  Final Energy: X.XXXXXX (DIVERGED)
+  Max Abs Error: X.XXe+XX
+  Max Rel Error: X.XXe+XX
+
+--- RK4 Integrator ---
+  Time: X.XXXs
+  Initial Energy: 0.XXXXXX
+  Final Energy: 0.XXXXXX
+  Max Abs Error: X.XXe-XX
+  Max Rel Error: X.XXe-XX
+
+--- Symplectic Integrator ---
+  Time: X.XXXs
+  Initial Energy: 0.XXXXXX
+  Final Energy: 0.XXXXXX
+  Max Abs Error: X.XXe-XX (TINY!) ✓
+  Max Rel Error: X.XXe-XX
+</code></pre></div></div>
+
+<p>The key insight: <strong>Symplectic preserves energy while Euler/RK4 fail</strong></p>
+
+<hr />
+
+<h2 id="-what-to-look-for">🔍 What to Look For</h2>
+
+<p>In the energy drift plot:</p>
+
+<ol>
+  <li><strong>Euler</strong> (red line at top)
+    <ul>
+      <li>Exponential growth</li>
+      <li>Clearly fails</li>
+      <li>Shows why naive integration is dangerous</li>
+    </ul>
+  </li>
+  <li><strong>RK4</strong> (orange line in middle)
+    <ul>
+      <li>Linear drift</li>
+      <li>Better than Euler</li>
+      <li>But accumulates error over time</li>
+    </ul>
+  </li>
+  <li><strong>Symplectic</strong> (green line at bottom)
+    <ul>
+      <li>Bounded oscillation</li>
+      <li>Stable over entire time range</li>
+      <li>What structure preservation looks like</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h2 id="-next-steps">🎯 Next Steps</h2>
+
+<h3 id="to-deepen-understanding">To Deepen Understanding</h3>
+
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Read <code class="language-plaintext highlighter-rouge">README.md</code> for mathematical background</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Study <code class="language-plaintext highlighter-rouge">src/cpu/integrators.py</code> — understand each method</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Modify <code class="language-plaintext highlighter-rouge">benchmark.py</code> — try different initial conditions</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Implement adaptive timestepping</li>
+</ul>
+
+<h3 id="to-extend-the-project">To Extend the Project</h3>
+
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />GPU kernel optimization</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Mixed-precision integration</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Poincaré section visualization</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Performance profiling</li>
+</ul>
+
+<hr />
+
+<h2 id="-key-files">📁 Key Files</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/cpu/benchmark.py</code></td>
+      <td>Run CPU benchmark</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/cpu/integrators.py</code></td>
+      <td>All three integrators</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/cpu/analysis.py</code></td>
+      <td>Visualization &amp; analysis</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">notebooks/01_cpu_benchmark.ipynb</code></td>
+      <td>Interactive analysis</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">include/henon_heiles.h</code></td>
+      <td>System definitions</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/gpu/integrators.cu</code></td>
+      <td>GPU kernels</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">CMakeLists.txt</code></td>
+      <td>Build configuration</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="-tips">💡 Tips</h2>
+
+<h3 id="to-see-more-detail-in-energy-conservation">To see more detail in energy conservation:</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python benchmark.py 1000 50000 0.0005
+</code></pre></div></div>
+<p>This runs 1000 trajectories for 50,000 steps with smaller timestep.</p>
+
+<h3 id="to-test-different-systems">To test different systems:</h3>
+
+<p>Modify <code class="language-plaintext highlighter-rouge">henon_heiles_gradients()</code> in <code class="language-plaintext highlighter-rouge">src/cpu/integrators.py</code> to implement another Hamiltonian.</p>
+
+<h3 id="to-profile-gpu-performance">To profile GPU performance:</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nvprof ./build/symplectic_gpu_benchmark
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="-faq">❓ FAQ</h2>
+
+<p><strong>Q: Why symplectic integrators?</strong><br />
+A: They preserve the mathematical structure (symplectic form) that encodes energy conservation. This survives discretization, unlike naive methods.</p>
+
+<p><strong>Q: Why GPU?</strong><br />
+A: Each trajectory is independent → embarrassingly parallel. GPU excels at this pattern. 100x-1000x speedup expected.</p>
+
+<p><strong>Q: What’s special about Hénon-Heiles?</strong><br />
+A: It’s chaotic and nonlinear, so errors accumulate fast. A perfect test case for structure preservation.</p>
+
+<p><strong>Q: Can I use this for other systems?</strong><br />
+A: Yes! Modify the potential and gradient functions to implement any Hamiltonian.</p>
+
+<hr />
+
+<p><strong>Ready to dive in? Run <code class="language-plaintext highlighter-rouge">python src/cpu/benchmark.py</code> and check <code class="language-plaintext highlighter-rouge">data/energy_drift_comparison.png</code>!</strong></p>
+
+
+      </section>
+      <footer>
+        
+        <p>This project is maintained by <a href="https://github.com/OleBo">OleBo</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>

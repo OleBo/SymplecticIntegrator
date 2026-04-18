@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Docker Setup | Symplectic Integrator on GPUs</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Docker Setup" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:site_name" content="Symplectic Integrator on GPUs" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Docker Setup" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"Demonstrating mathematical integrity under GPU parallelization and reduced precision.","headline":"Docker Setup","url":"/DOCKER.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=3866f225d98a6c78601d54880f9b5186278e53d4">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+    <script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    }
+  };
+</script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Symplectic Integrator on GPUs</a></h1>
+
+        
+
+        <p>Demonstrating mathematical integrity under GPU parallelization and reduced precision.</p>
+
+        
+        <p class="view"><a href="https://github.com/OleBo/SymplecticIntegrator">View the Project on GitHub <small>OleBo/SymplecticIntegrator</small></a></p>
+        
+
+        
+
+        
+        <nav>
+  <ul>
+    
+    
+      
+    
+      
+    
+      
+        <li>
+          <a href="/">Home</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/symplectic_integrator_documentation.html">Mathematical Foundations</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/benchmark_experiment_documentation.html">Benchmark Experiments</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/cuda_implementation_documentation.html">CUDA Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/ARCHITECTURE.html">Architecture & Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/TODO.html">ToDo</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/QUICKSTART.html">Quick Start</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/SUMMARY.html">Executive Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/README_CONTAINERIZATION.html">Containerization</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/CONTAINERIZATION_COMPLETE.html">Containerization Full Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER.html">Docker Setup</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER_QUICK_REFERENCE.html">Quick Reference</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/MANIFEST.html">Manifest</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+      </header>
+      <section>
+
+      <h1 id="docker-setup-guide">Docker Setup Guide</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>This project includes Docker configurations for:</p>
+<ul>
+  <li><strong>Development</strong>: Full environment with all build tools</li>
+  <li><strong>Production</strong>: Optimized multi-stage build (smaller image)</li>
+  <li><strong>Jupyter</strong>: Interactive notebook environment</li>
+  <li><strong>GPU Support</strong>: NVIDIA GPU acceleration via Docker Compose</li>
+</ul>
+
+<hr />
+
+<h2 id="quick-start">Quick Start</h2>
+
+<h3 id="option-1-using-docker-compose-recommended">Option 1: Using Docker Compose (Recommended)</h3>
+
+<h4 id="cpu-only-benchmark">CPU-only benchmark:</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker-compose run symplectic-cpu bash
+<span class="nb">cd </span>src/cpu
+python benchmark.py
+</code></pre></div></div>
+
+<h4 id="gpu-version-requires-nvidia-docker">GPU version (requires nvidia-docker):</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker-compose run symplectic-gpu bash
+<span class="nb">cd </span>build
+./example  <span class="c"># Run GPU example</span>
+</code></pre></div></div>
+
+<h4 id="interactive-jupyter-notebook">Interactive Jupyter notebook:</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker-compose up notebook
+<span class="c"># Open http://localhost:8888 in browser</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="option-2-direct-docker-build">Option 2: Direct Docker Build</h3>
+
+<h4 id="simple-build">Simple build:</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker build <span class="nt">-t</span> symplectic-integrator <span class="nb">.</span>
+</code></pre></div></div>
+
+<h4 id="multi-stage-optimized-build">Multi-stage optimized build:</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker build <span class="nt">-f</span> Dockerfile.multistage <span class="nt">-t</span> symplectic-integrator:optimized <span class="nb">.</span>
+</code></pre></div></div>
+
+<h4 id="run-container">Run container:</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-it</span> <span class="nt">--rm</span> symplectic-integrator /bin/bash
+</code></pre></div></div>
+
+<h4 id="with-gpu-support-requires-nvidia-docker">With GPU support (requires nvidia-docker):</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-it</span> <span class="nt">--rm</span> <span class="nt">--gpus</span> all symplectic-integrator /bin/bash
+</code></pre></div></div>
+
+<h4 id="mount-data-directory">Mount data directory:</h4>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-it</span> <span class="nt">--rm</span> <span class="se">\</span>
+  <span class="nt">-v</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>/data:/app/data <span class="se">\</span>
+  symplectic-integrator /bin/bash
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="gpu-support-setup">GPU Support Setup</h2>
+
+<h3 id="prerequisites">Prerequisites</h3>
+
+<ol>
+  <li><strong>NVIDIA GPU</strong> (tested on V100, A100, RTX series)</li>
+  <li><strong>NVIDIA Docker Runtime</strong></li>
+</ol>
+
+<h3 id="install-nvidia-docker">Install nvidia-docker</h3>
+
+<p><strong>Ubuntu/Debian:</strong></p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">distribution</span><span class="o">=</span><span class="si">$(</span><span class="nb">.</span> /etc/os-release<span class="p">;</span><span class="nb">echo</span> <span class="nv">$ID$VERSION_ID</span><span class="si">)</span>
+curl <span class="nt">-s</span> <span class="nt">-L</span> https://nvidia.github.io/nvidia-docker/gpgkey | <span class="nb">sudo </span>apt-key add -
+curl <span class="nt">-s</span> <span class="nt">-L</span> https://nvidia.github.io/nvidia-docker/<span class="nv">$distribution</span>/nvidia-docker.list | <span class="se">\</span>
+  <span class="nb">sudo tee</span> /etc/apt/sources.list.d/nvidia-docker.list
+
+<span class="nb">sudo </span>apt-get update <span class="o">&amp;&amp;</span> <span class="nb">sudo </span>apt-get <span class="nb">install</span> <span class="nt">-y</span> nvidia-docker2
+<span class="nb">sudo </span>systemctl restart docker
+</code></pre></div></div>
+
+<p><strong>macOS with Docker Desktop:</strong>
+GPU support is automatic through Docker Desktop 4.6+</p>
+
+<h3 id="verify-gpu-setup">Verify GPU Setup</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">--rm</span> <span class="nt">--gpus</span> all nvidia/cuda:11.8.0-runtime-ubuntu22.04 nvidia-smi
+</code></pre></div></div>
+
+<p>Should show GPU information.</p>
+
+<hr />
+
+<h2 id="docker-compose-services">Docker Compose Services</h2>
+
+<h3 id="symplectic-cpu"><code class="language-plaintext highlighter-rouge">symplectic-cpu</code></h3>
+<ul>
+  <li>Full development environment</li>
+  <li>Includes build tools and Python</li>
+  <li>CPU-only (no GPU needed)</li>
+  <li>For development and testing</li>
+</ul>
+
+<h3 id="symplectic-gpu"><code class="language-plaintext highlighter-rouge">symplectic-gpu</code></h3>
+<ul>
+  <li>Optimized for GPU execution</li>
+  <li>Has nvidia-docker GPU support</li>
+  <li>Use for performance benchmarking</li>
+  <li>Requires compatible GPU</li>
+</ul>
+
+<h3 id="notebook"><code class="language-plaintext highlighter-rouge">notebook</code></h3>
+<ul>
+  <li>Jupyter notebook server</li>
+  <li>Port 8888 (localhost)</li>
+  <li>Real-time analysis and visualization</li>
+  <li>Pre-configured with Matplotlib</li>
+</ul>
+
+<hr />
+
+<h2 id="image-sizes">Image Sizes</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Image</th>
+      <th>Size</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Development</td>
+      <td>~4 GB</td>
+      <td>Full build tools included</td>
+    </tr>
+    <tr>
+      <td>Optimized</td>
+      <td>~2 GB</td>
+      <td>Multi-stage, runtime only</td>
+    </tr>
+    <tr>
+      <td>Base CUDA</td>
+      <td>~1 GB</td>
+      <td>nvidia/cuda base image</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="common-commands">Common Commands</h2>
+
+<h3 id="build">Build</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Simple build</span>
+docker build <span class="nt">-t</span> symplectic-integrator <span class="nb">.</span>
+
+<span class="c"># Multi-stage build (smaller)</span>
+docker build <span class="nt">-f</span> Dockerfile.multistage <span class="nt">-t</span> symplectic-integrator:slim <span class="nb">.</span>
+
+<span class="c"># With build args</span>
+docker build <span class="nt">--build-arg</span> <span class="nv">CUDA_VERSION</span><span class="o">=</span>12.0 <span class="nt">-t</span> symplectic-integrator <span class="nb">.</span>
+</code></pre></div></div>
+
+<h3 id="run">Run</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Interactive shell</span>
+docker run <span class="nt">-it</span> symplectic-integrator bash
+
+<span class="c"># Run benchmark</span>
+docker run symplectic-integrator python src/cpu/benchmark.py
+
+<span class="c"># With volume mount</span>
+docker run <span class="nt">-v</span> ~/data:/app/data symplectic-integrator bash
+
+<span class="c"># With GPU</span>
+docker run <span class="nt">--gpus</span> all symplectic-integrator bash
+</code></pre></div></div>
+
+<h3 id="compose">Compose</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Start all services</span>
+docker-compose up
+
+<span class="c"># Run single service</span>
+docker-compose run symplectic-cpu bash
+
+<span class="c"># Stop services</span>
+docker-compose down
+
+<span class="c"># View logs</span>
+docker-compose logs <span class="nt">-f</span>
+</code></pre></div></div>
+
+<h3 id="clean-up">Clean up</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Remove images</span>
+docker rmi symplectic-integrator
+
+<span class="c"># Remove containers</span>
+docker-compose down <span class="nt">-v</span>
+
+<span class="c"># Remove all unused images</span>
+docker image prune <span class="nt">-a</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<h3 id="gpu-not-detected">GPU Not Detected</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Check nvidia-docker installation</span>
+nvidia-docker run <span class="nt">--rm</span> nvidia/cuda nvidia-smi
+
+<span class="c"># Check Docker GPU support</span>
+docker run <span class="nt">--rm</span> <span class="nt">--gpus</span> all nvidia/cuda nvidia-smi
+
+<span class="c"># Verify compose GPU config</span>
+docker-compose <span class="nb">exec </span>symplectic-gpu nvidia-smi
+</code></pre></div></div>
+
+<h3 id="out-of-memory">Out of Memory</h3>
+<ul>
+  <li>Reduce trajectory count: <code class="language-plaintext highlighter-rouge">python benchmark.py 100 1000</code></li>
+  <li>Use GPU: GPU has more VRAM than CPU</li>
+  <li>Check: <code class="language-plaintext highlighter-rouge">docker stats</code></li>
+</ul>
+
+<h3 id="build-failures">Build Failures</h3>
+<ul>
+  <li>Check CUDA version compatibility</li>
+  <li>Verify nvidia/cuda image availability</li>
+  <li>Check disk space: <code class="language-plaintext highlighter-rouge">docker system df</code></li>
+</ul>
+
+<h3 id="permission-issues">Permission Issues</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Run as specific user</span>
+docker run <span class="nt">--user</span> <span class="si">$(</span><span class="nb">id</span> <span class="nt">-u</span><span class="si">)</span>:<span class="si">$(</span><span class="nb">id</span> <span class="nt">-g</span><span class="si">)</span> symplectic-integrator bash
+
+<span class="c"># Fix volume mount permissions</span>
+<span class="nb">sudo chown</span> <span class="nt">-R</span> <span class="nv">$USER</span>:<span class="nv">$USER</span> ./data
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="kubernetes-deployment-optional">Kubernetes Deployment (Optional)</h2>
+
+<h3 id="create-deployment-yaml">Create deployment YAML:</h3>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">apps/v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">Deployment</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">symplectic-integrator</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">replicas</span><span class="pi">:</span> <span class="m">1</span>
+  <span class="na">selector</span><span class="pi">:</span>
+    <span class="na">matchLabels</span><span class="pi">:</span>
+      <span class="na">app</span><span class="pi">:</span> <span class="s">symplectic</span>
+  <span class="na">template</span><span class="pi">:</span>
+    <span class="na">metadata</span><span class="pi">:</span>
+      <span class="na">labels</span><span class="pi">:</span>
+        <span class="na">app</span><span class="pi">:</span> <span class="s">symplectic</span>
+    <span class="na">spec</span><span class="pi">:</span>
+      <span class="na">containers</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">symplectic</span>
+        <span class="na">image</span><span class="pi">:</span> <span class="s">symplectic-integrator:gpu</span>
+        <span class="na">resources</span><span class="pi">:</span>
+          <span class="na">limits</span><span class="pi">:</span>
+            <span class="na">nvidia.com/gpu</span><span class="pi">:</span> <span class="m">1</span>
+      <span class="na">nodeSelector</span><span class="pi">:</span>
+        <span class="na">accelerator</span><span class="pi">:</span> <span class="s">nvidia-tesla</span>
+</code></pre></div></div>
+
+<h3 id="deploy">Deploy:</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kubectl apply <span class="nt">-f</span> deployment.yaml
+kubectl logs <span class="nt">-f</span> deployment/symplectic-integrator
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="cicd-integration">CI/CD Integration</h2>
+
+<h3 id="github-actions-example">GitHub Actions Example:</h3>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">name</span><span class="pi">:</span> <span class="s">Docker Build</span>
+
+<span class="na">on</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">push</span><span class="pi">,</span> <span class="nv">pull_request</span><span class="pi">]</span>
+
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v2</span>
+      <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">docker/build-push-action@v2</span>
+        <span class="na">with</span><span class="pi">:</span>
+          <span class="na">file</span><span class="pi">:</span> <span class="s">./Dockerfile</span>
+          <span class="na">tags</span><span class="pi">:</span> <span class="s">symplectic-integrator:$</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="production-considerations">Production Considerations</h2>
+
+<h3 id="security">Security</h3>
+<ul>
+  <li>Use specific version tags (not <code class="language-plaintext highlighter-rouge">latest</code>)</li>
+  <li>Scan images: <code class="language-plaintext highlighter-rouge">docker scan symplectic-integrator</code></li>
+  <li>Use read-only filesystem if possible</li>
+  <li>Run as non-root user</li>
+</ul>
+
+<h3 id="performance">Performance</h3>
+<ul>
+  <li>Use multi-stage builds</li>
+  <li>Cache layer optimization</li>
+  <li>Pin base image versions</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">.dockerignore</code></li>
+</ul>
+
+<h3 id="monitoring">Monitoring</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Monitor resource usage</span>
+docker stats
+
+<span class="c"># Check image layers</span>
+docker <span class="nb">history </span>symplectic-integrator
+
+<span class="c"># Inspect image</span>
+docker inspect symplectic-integrator
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="advanced-custom-build-args">Advanced: Custom Build Args</h2>
+
+<p>Add to Dockerfile:</p>
+<div class="language-dockerfile highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ARG</span><span class="s"> CUDA_VERSION=11.8.0</span>
+<span class="k">ARG</span><span class="s"> UBUNTU_VERSION=22.04</span>
+<span class="k">ARG</span><span class="s"> PYTHON_VERSION=3.10</span>
+
+<span class="k">FROM</span><span class="s"> nvidia/cuda:${CUDA_VERSION}-runtime-ubuntu${UBUNTU_VERSION}</span>
+...
+</code></pre></div></div>
+
+<p>Build with custom versions:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker build <span class="se">\</span>
+  <span class="nt">--build-arg</span> <span class="nv">CUDA_VERSION</span><span class="o">=</span>12.0 <span class="se">\</span>
+  <span class="nt">--build-arg</span> <span class="nv">PYTHON_VERSION</span><span class="o">=</span>3.11 <span class="se">\</span>
+  <span class="nt">-t</span> symplectic-integrator:custom <span class="nb">.</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="resources">Resources</h2>
+
+<ul>
+  <li><a href="https://github.com/NVIDIA/nvidia-docker">NVIDIA Container Toolkit</a></li>
+  <li><a href="https://docs.docker.com">Docker Documentation</a></li>
+  <li><a href="https://hub.docker.com/r/nvidia/cuda">nvidia/cuda Base Images</a></li>
+  <li><a href="https://docs.docker.com/compose/compose-file/">Docker Compose Reference</a></li>
+</ul>
+
+<hr />
+
+<p><strong>Ready to containerize! 🐳</strong></p>
+
+
+      </section>
+      <footer>
+        
+        <p>This project is maintained by <a href="https://github.com/OleBo">OleBo</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>

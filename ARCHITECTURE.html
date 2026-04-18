@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Architecture &amp; Implementation | Symplectic Integrator on GPUs</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Architecture &amp; Implementation" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:site_name" content="Symplectic Integrator on GPUs" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Architecture &amp; Implementation" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"Demonstrating mathematical integrity under GPU parallelization and reduced precision.","headline":"Architecture &amp; Implementation","url":"/ARCHITECTURE.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=3866f225d98a6c78601d54880f9b5186278e53d4">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+    <script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    }
+  };
+</script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Symplectic Integrator on GPUs</a></h1>
+
+        
+
+        <p>Demonstrating mathematical integrity under GPU parallelization and reduced precision.</p>
+
+        
+        <p class="view"><a href="https://github.com/OleBo/SymplecticIntegrator">View the Project on GitHub <small>OleBo/SymplecticIntegrator</small></a></p>
+        
+
+        
+
+        
+        <nav>
+  <ul>
+    
+    
+      
+    
+      
+    
+      
+        <li>
+          <a href="/">Home</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/symplectic_integrator_documentation.html">Mathematical Foundations</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/benchmark_experiment_documentation.html">Benchmark Experiments</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/cuda_implementation_documentation.html">CUDA Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/ARCHITECTURE.html">Architecture & Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/TODO.html">ToDo</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/QUICKSTART.html">Quick Start</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/SUMMARY.html">Executive Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/README_CONTAINERIZATION.html">Containerization</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/CONTAINERIZATION_COMPLETE.html">Containerization Full Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER.html">Docker Setup</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER_QUICK_REFERENCE.html">Quick Reference</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/MANIFEST.html">Manifest</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+      </header>
+      <section>
+
+      <h1 id="project-architecture--implementation-guide">Project Architecture &amp; Implementation Guide</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>GPU-Accelerated Symplectic Integrator demonstrates:</p>
+<ul>
+  <li>Mathematical rigor in numerical integration</li>
+  <li>Structure-preserving algorithms for Hamiltonian systems</li>
+  <li>GPU parallelization of embarrassingly-parallel workloads</li>
+  <li>Long-term energy conservation in chaotic systems</li>
+</ul>
+
+<p><strong>Target audience:</strong> NVIDIA-level research teams, quantitative researchers, HPC specialists</p>
+
+<hr />
+
+<h2 id="mathematical-foundation">Mathematical Foundation</h2>
+
+<h3 id="core-problem">Core Problem</h3>
+
+<p>Integrate Hamilton’s equations:
+\(\frac{d\mathbf{q}}{dt} = \frac{\partial H}{\partial \mathbf{p}}, \quad \frac{d\mathbf{p}}{dt} = -\frac{\partial H}{\partial \mathbf{q}}\)</p>
+
+<p>Key property: These preserve the <strong>symplectic structure</strong> — an invariant volume element in phase space.</p>
+
+<h3 id="why-this-matters">Why This Matters</h3>
+
+<p>Most numerical methods do NOT preserve this structure:</p>
+<ul>
+  <li><strong>Euler</strong>: Violates symplectic structure → energy explodes</li>
+  <li><strong>RK4</strong>: Violates symplectic structure → energy drifts linearly</li>
+  <li><strong>Symplectic (Leapfrog)</strong>: PRESERVES structure → bounded energy error</li>
+</ul>
+
+<p>The difference between these is <strong>not</strong> just simulation accuracy—it’s about preserving fundamental mathematical properties of the system.</p>
+
+<h3 id="the-test-system-hénon-heiles">The Test System: Hénon-Heiles</h3>
+
+\[H(x,y,p_x,p_y) = \frac{1}{2}(p_x^2 + p_y^2) + \frac{1}{2}(x^2 + y^2) + x^2y - \frac{1}{3}y^3\]
+
+<p>Properties:</p>
+<ul>
+  <li><strong>Chaotic</strong> for $E &gt; 1/6 \approx 0.167$</li>
+  <li><strong>Nonlinear</strong> → exponential divergence of nearby trajectories</li>
+  <li><strong>Integrable</strong> for low energies → predictable orbits</li>
+  <li><strong>Hard to simulate</strong> → small errors accumulate catastrophically</li>
+</ul>
+
+<p>Perfect test case for demonstrating structure preservation.</p>
+
+<hr />
+
+<h2 id="software-architecture">Software Architecture</h2>
+
+<h3 id="layer-1-core-mathematical-definitions">Layer 1: Core Mathematical Definitions</h3>
+
+<p><strong>File:</strong> <code class="language-plaintext highlighter-rouge">include/henon_heiles.h</code></p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">State4D</span> <span class="p">{</span>
+    <span class="kt">float</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">px</span><span class="p">,</span> <span class="n">py</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">__host__</span> <span class="n">__device__</span> <span class="kr">inline</span> <span class="kt">float</span> <span class="n">compute_energy</span><span class="p">(</span><span class="kt">float</span> <span class="n">x</span><span class="p">,</span> <span class="kt">float</span> <span class="n">y</span><span class="p">,</span> <span class="kt">float</span> <span class="n">px</span><span class="p">,</span> <span class="kt">float</span> <span class="n">py</span><span class="p">);</span>
+<span class="n">__host__</span> <span class="n">__device__</span> <span class="kr">inline</span> <span class="kt">void</span> <span class="n">compute_gradients</span><span class="p">(</span><span class="kt">float</span> <span class="n">x</span><span class="p">,</span> <span class="kt">float</span> <span class="n">y</span><span class="p">,</span> <span class="kt">float</span><span class="o">&amp;</span> <span class="n">grad_x</span><span class="p">,</span> <span class="kt">float</span><span class="o">&amp;</span> <span class="n">grad_y</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p><strong>Key Design:</strong></p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">__host__ __device__</code> functions → works on both CPU and GPU</li>
+  <li>Inline → no function call overhead in tight loops</li>
+  <li>Minimal state structure → minimal memory bandwidth</li>
+</ul>
+
+<h3 id="layer-2-integrator-api">Layer 2: Integrator API</h3>
+
+<p><strong>Files:</strong></p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">include/integrators.h</code> (declarations)</li>
+  <li><code class="language-plaintext highlighter-rouge">src/gpu/integrators.cu</code> (GPU kernels)</li>
+  <li><code class="language-plaintext highlighter-rouge">src/cpu/integrators.py</code> (CPU reference)</li>
+</ul>
+
+<p>Three integrator classes:</p>
+
+<h4 id="1-euler-integrator">1. Euler Integrator</h4>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">EulerIntegrator</span><span class="p">(</span><span class="n">BaseIntegrator</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+            <span class="n">grad_x</span><span class="p">,</span> <span class="n">grad_y</span> <span class="o">=</span> <span class="n">henon_heiles_gradients</span><span class="p">(</span><span class="n">state</span><span class="p">.</span><span class="n">x</span><span class="p">,</span> <span class="n">state</span><span class="p">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">x</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">state</span><span class="p">.</span><span class="n">px</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">y</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">state</span><span class="p">.</span><span class="n">py</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">px</span> <span class="o">-=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_x</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">py</span> <span class="o">-=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_y</span>
+        <span class="k">return</span> <span class="n">state</span>
+</code></pre></div></div>
+
+<p><strong>Characteristics:</strong></p>
+<ul>
+  <li>Simple, naive</li>
+  <li>Non-symplectic</li>
+  <li>Energy explodes</li>
+</ul>
+
+<h4 id="2-rk4-integrator">2. RK4 Integrator</h4>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">RK4Integrator</span><span class="p">(</span><span class="n">BaseIntegrator</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+            <span class="c1"># 4 stages of RK4...
+</span>            <span class="c1"># Evaluate k1, k2, k3, k4
+</span>            <span class="c1"># Combine with weights 1/6, 2/6, 2/6, 1/6
+</span>        <span class="k">return</span> <span class="n">state</span>
+</code></pre></div></div>
+
+<p><strong>Characteristics:</strong></p>
+<ul>
+  <li>Fourth-order accurate</li>
+  <li>General-purpose (works for any ODE)</li>
+  <li>Non-symplectic</li>
+  <li>Energy drifts linearly</li>
+</ul>
+
+<h4 id="3-symplectic-leapfrog-integrator">3. Symplectic (Leapfrog) Integrator</h4>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">SymplecticIntegrator</span><span class="p">(</span><span class="n">BaseIntegrator</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+            <span class="n">grad_x</span><span class="p">,</span> <span class="n">grad_y</span> <span class="o">=</span> <span class="n">henon_heiles_gradients</span><span class="p">(</span><span class="n">state</span><span class="p">.</span><span class="n">x</span><span class="p">,</span> <span class="n">state</span><span class="p">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">px</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_x</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">py</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_y</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">x</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">state</span><span class="p">.</span><span class="n">px</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">y</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">state</span><span class="p">.</span><span class="n">py</span>
+            <span class="n">grad_x</span><span class="p">,</span> <span class="n">grad_y</span> <span class="o">=</span> <span class="n">henon_heiles_gradients</span><span class="p">(</span><span class="n">state</span><span class="p">.</span><span class="n">x</span><span class="p">,</span> <span class="n">state</span><span class="p">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">px</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_x</span>
+            <span class="n">state</span><span class="p">.</span><span class="n">py</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_y</span>
+        <span class="k">return</span> <span class="n">state</span>
+</code></pre></div></div>
+
+<p><strong>Characteristics:</strong></p>
+<ul>
+  <li>Staggered/interleaved updates</li>
+  <li>Symplectic structure preserving</li>
+  <li>Second-order accurate</li>
+  <li>Energy bounded over long times</li>
+</ul>
+
+<h3 id="layer-3-analysis-infrastructure">Layer 3: Analysis Infrastructure</h3>
+
+<p><strong>Files:</strong></p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">src/cpu/analysis.py</code> → Energy tracking and visualization</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">EnergyAnalysis</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">add_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">,</span> <span class="n">energies_history</span><span class="p">,</span> <span class="n">times</span><span class="p">):</span>
+        <span class="c1"># Store results
+</span>    
+    <span class="k">def</span> <span class="nf">compute_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">):</span>
+        <span class="c1"># Compute max error, mean error, etc.
+</span>    
+    <span class="k">def</span> <span class="nf">plot_energy_drift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">):</span>
+        <span class="c1"># Generate comparison plots
+</span>    
+    <span class="k">def</span> <span class="nf">print_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Print statistics table
+</span></code></pre></div></div>
+
+<h3 id="layer-4-gpu-implementation">Layer 4: GPU Implementation</h3>
+
+<p><strong>File:</strong> <code class="language-plaintext highlighter-rouge">src/gpu/integrators.cu</code></p>
+
+<p><strong>Kernel structure:</strong></p>
+
+<div class="language-cuda highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">__global__</span> <span class="kt">void</span> <span class="nf">symplectic_kernel</span><span class="p">(</span>
+    <span class="kt">float</span><span class="o">*</span> <span class="n">x</span><span class="p">,</span> <span class="kt">float</span><span class="o">*</span> <span class="n">y</span><span class="p">,</span>      <span class="c1">// Position arrays</span>
+    <span class="kt">float</span><span class="o">*</span> <span class="n">px</span><span class="p">,</span> <span class="kt">float</span><span class="o">*</span> <span class="n">py</span><span class="p">,</span>    <span class="c1">// Momentum arrays</span>
+    <span class="kt">int</span> <span class="n">n</span><span class="p">,</span>                   <span class="c1">// Number of trajectories</span>
+    <span class="kt">float</span> <span class="n">dt</span><span class="p">,</span>                <span class="c1">// Timestep</span>
+    <span class="kt">int</span> <span class="n">steps</span><span class="p">)</span> <span class="p">{</span>             <span class="c1">// Integration steps</span>
+    
+    <span class="c1">// Each thread processes one trajectory</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">n</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+    
+    <span class="c1">// Load trajectory into registers</span>
+    <span class="kt">float</span> <span class="n">xi</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">float</span> <span class="n">yi</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">float</span> <span class="n">pxi</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">float</span> <span class="n">pyi</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    
+    <span class="c1">// Integrate all steps</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">steps</span><span class="p">;</span> <span class="o">++</span><span class="n">t</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Compute gradients (arithmetic on registers only)</span>
+        <span class="kt">float</span> <span class="n">grad_x</span> <span class="o">=</span> <span class="n">xi</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">xi</span><span class="o">*</span><span class="n">yi</span><span class="p">;</span>
+        <span class="kt">float</span> <span class="n">grad_y</span> <span class="o">=</span> <span class="n">yi</span> <span class="o">+</span> <span class="n">xi</span><span class="o">*</span><span class="n">xi</span> <span class="o">-</span> <span class="n">yi</span><span class="o">*</span><span class="n">yi</span><span class="p">;</span>
+        
+        <span class="c1">// Symplectic update (all in registers)</span>
+        <span class="n">pxi</span> <span class="o">-=</span> <span class="mf">0.5</span><span class="n">f</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_x</span><span class="p">;</span>
+        <span class="n">pyi</span> <span class="o">-=</span> <span class="mf">0.5</span><span class="n">f</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_y</span><span class="p">;</span>
+        <span class="n">xi</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">pxi</span><span class="p">;</span>
+        <span class="n">yi</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">pyi</span><span class="p">;</span>
+        <span class="n">grad_x</span> <span class="o">=</span> <span class="n">xi</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">xi</span><span class="o">*</span><span class="n">yi</span><span class="p">;</span>
+        <span class="n">grad_y</span> <span class="o">=</span> <span class="n">yi</span> <span class="o">+</span> <span class="n">xi</span><span class="o">*</span><span class="n">xi</span> <span class="o">-</span> <span class="n">yi</span><span class="o">*</span><span class="n">yi</span><span class="p">;</span>
+        <span class="n">pxi</span> <span class="o">-=</span> <span class="mf">0.5</span><span class="n">f</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_x</span><span class="p">;</span>
+        <span class="n">pyi</span> <span class="o">-=</span> <span class="mf">0.5</span><span class="n">f</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">grad_y</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="c1">// Write results back</span>
+    <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">xi</span><span class="p">;</span>
+    <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">yi</span><span class="p">;</span>
+    <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pxi</span><span class="p">;</span>
+    <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pyi</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>GPU Optimization Techniques:</strong></p>
+
+<ol>
+  <li><strong>Data Locality</strong>: All trajectory data in registers
+    <ul>
+      <li>No shared memory needed</li>
+      <li>Perfect memory coalescing (each thread writes to consecutive memory)</li>
+      <li>Minimal register pressure</li>
+    </ul>
+  </li>
+  <li><strong>Work Partitioning</strong>: One trajectory per thread
+    <ul>
+      <li>Perfect load balancing</li>
+      <li>No synchronization needed</li>
+      <li>Scales transparently with GPU count</li>
+    </ul>
+  </li>
+  <li><strong>Arithmetic Density</strong>: 4 operations per memory access
+    <ul>
+      <li>Good compute-to-bandwidth ratio</li>
+      <li>Hides memory latency well</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h2 id="data-flow">Data Flow</h2>
+
+<h3 id="cpu-benchmark">CPU Benchmark</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>┌─────────────────────────┐
+│ Create Initial Ensemble │
+│  (random in chaos)      │
+└────────────┬────────────┘
+             │
+             ├──→ EulerIntegrator ─┐
+             │                     ├─→ EnergyAnalysis ─→ Plots
+             ├─→ RK4Integrator ───┤
+             │                     │
+             └─→ SymplecticIntegrator ┘
+                  │
+                  └─→ Write results to data/
+</code></pre></div></div>
+
+<h3 id="gpu-execution">GPU Execution</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Host                           Device
+───────────────────────────────────────────
+Initial states                 Allocate GPU memory
+     │                              │
+     ├─→ cudaMemcpy ─────────────→ GPU buffers
+     │
+     └─→ Launch kernel
+          │
+          └────────────────────→ 1000s of threads
+                                 each integrate 1 trajectory
+                                 │
+                         ┌───────┴────────┐
+                         │                │
+                    Symplectic_kernel   Energy_kernel
+                         │                │
+          ←──────────────┴────────────────┘
+          
+     Results from GPU
+     │
+     ├─ cudaMemcpy ←────────────────
+     │
+     └─→ Analyze/visualize
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="performance-characteristics">Performance Characteristics</h2>
+
+<h3 id="cpu-baseline">CPU Baseline</h3>
+
+<p><strong>Throughput:</strong></p>
+<ul>
+  <li>100 trajectories × 10,000 steps = 1,000,000 trajectory-steps</li>
+  <li>Typical time: 1-5 seconds</li>
+  <li>Throughput: ~10⁷ steps/sec</li>
+</ul>
+
+<p><strong>Limitation:</strong> Sequential execution on single core</p>
+
+<h3 id="gpu">GPU</h3>
+
+<p><strong>Theoretical Peak:</strong></p>
+<ul>
+  <li>GPU with 2000 CUDA cores</li>
+  <li>1000 trajectories × 100,000 steps = 10⁸ trajectory-steps</li>
+  <li>Estimated time: &lt;100ms</li>
+  <li>Throughput: ~10¹⁰ steps/sec</li>
+</ul>
+
+<p><strong>Expected speedup: 100-1000x</strong></p>
+
+<h3 id="why-this-scaling">Why This Scaling</h3>
+
+<ol>
+  <li><strong>Embarrassingly parallel</strong>: No inter-trajectory communication</li>
+  <li><strong>High arithmetic intensity</strong>: 4 FLOPs per memory access</li>
+  <li><strong>Predictable memory access</strong>: Sequential writes enable coalescing</li>
+  <li><strong>Scalable work</strong>: More trajectories = more GPU utilization</li>
+</ol>
+
+<hr />
+
+<h2 id="build-system">Build System</h2>
+
+<h3 id="cpu-baseline-1">CPU Baseline</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>src/cpu
+python <span class="nt">-m</span> pip <span class="nb">install</span> <span class="nt">-r</span> ../../requirements.txt
+python benchmark.py
+</code></pre></div></div>
+
+<p>No compilation needed—pure Python.</p>
+
+<h3 id="gpu-build">GPU Build</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir </span>build <span class="o">&amp;&amp;</span> <span class="nb">cd </span>build
+cmake ..
+make
+</code></pre></div></div>
+
+<p><strong>CMakeLists.txt structure:</strong></p>
+<div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">find_package</span><span class="p">(</span>CUDA REQUIRED<span class="p">)</span>
+<span class="nb">add_library</span><span class="p">(</span>symplectic_gpu SHARED src/gpu/integrators.cu<span class="p">)</span>
+<span class="nb">set_target_properties</span><span class="p">(</span>symplectic_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON<span class="p">)</span>
+<span class="nf">set_target_compile_options</span><span class="p">(</span>symplectic_gpu PRIVATE -O3 -arch=sm_70<span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>Key settings:</strong></p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">CUDA_SEPARABLE_COMPILATION</code> → allows device linking</li>
+  <li><code class="language-plaintext highlighter-rouge">-arch=sm_70</code> → target compute capability 7.0+ (V100/A100/RTX)</li>
+  <li><code class="language-plaintext highlighter-rouge">-O3</code> → aggressive optimization</li>
+</ul>
+
+<hr />
+
+<h2 id="testing-strategy">Testing Strategy</h2>
+
+<h3 id="unit-tests-not-yet-implemented">Unit Tests (not yet implemented)</h3>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">TEST</span><span class="p">(</span><span class="n">EnergyConservation</span><span class="p">,</span> <span class="n">SymplecticPreserves</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Integrate one step</span>
+    <span class="c1">// Check energy error &lt; 1e-6</span>
+<span class="p">}</span>
+
+<span class="n">TEST</span><span class="p">(</span><span class="n">IntegratorBounds</span><span class="p">,</span> <span class="n">SymplecticFinalStateValid</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Check final state in reasonable bounds</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="integration-tests-cpu-benchmark">Integration Tests (CPU benchmark)</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python src/cpu/benchmark.py
+<span class="c"># Check:</span>
+<span class="c"># 1. Symplectic max error &lt; Euler/RK4</span>
+<span class="c"># 2. Symplectic energy bounded over time</span>
+<span class="c"># 3. All methods produce physical results</span>
+</code></pre></div></div>
+
+<h3 id="performance-tests-gpu">Performance Tests (GPU)</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nvprof ./build/symplectic_gpu_example
+<span class="c"># Check:</span>
+<span class="c"># 1. Kernel launch overhead &lt; 1%</span>
+<span class="c"># 2. Memory bandwidth utilization &gt; 50%</span>
+<span class="c"># 3. No kernel divergence or shared memory conflicts</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="extension-ideas">Extension Ideas</h2>
+
+<h3 id="short-term-1-2-weeks">Short-term (1-2 weeks)</h3>
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Adaptive timestep (detect instability)</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Mixed precision (FP32 positions, FP64 energy)</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Poincaré section visualization</li>
+</ul>
+
+<h3 id="medium-term-1-month">Medium-term (1 month)</h3>
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Higher-order symplectic integrators (6th order)</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Other Hamiltonian systems (3D oscillators, particle chains)</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Hybrid CPU/GPU execution</li>
+</ul>
+
+<h3 id="long-term-1-months">Long-term (1+ months)</h3>
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Molecular dynamics acceleration (real application)</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Portfolio simulation (financial application)</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Quantum dynamics (phase space WKB methods)</li>
+</ul>
+
+<hr />
+
+<h2 id="key-files-reference">Key Files Reference</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Purpose</th>
+      <th>Language</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/cpu/integrators.py</code></td>
+      <td>Three integrator implementations</td>
+      <td>Python</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/cpu/analysis.py</code></td>
+      <td>Energy analysis and visualization</td>
+      <td>Python</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/cpu/benchmark.py</code></td>
+      <td>CPU benchmark driver</td>
+      <td>Python</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/gpu/integrators.cu</code></td>
+      <td>GPU kernels</td>
+      <td>CUDA C++</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">include/henon_heiles.h</code></td>
+      <td>System definitions (dual CPU/GPU)</td>
+      <td>C++</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">include/integrators.h</code></td>
+      <td>Integrator API</td>
+      <td>C++</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">CMakeLists.txt</code></td>
+      <td>Build configuration</td>
+      <td>CMake</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">notebooks/01_cpu_benchmark.ipynb</code></td>
+      <td>Interactive analysis</td>
+      <td>Jupyter</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="development-tips">Development Tips</h2>
+
+<h3 id="debug-energy-conservation">Debug Energy Conservation</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">src.cpu</span> <span class="kn">import</span> <span class="n">SymplecticIntegrator</span>
+<span class="n">integrator</span> <span class="o">=</span> <span class="n">SymplecticIntegrator</span><span class="p">()</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">create_initial_condition</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">final</span> <span class="o">=</span> <span class="n">integrator</span><span class="p">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">integrator</span><span class="p">.</span><span class="n">energies</span><span class="p">)</span>  <span class="c1"># Check if energy stays constant
+</span></code></pre></div></div>
+
+<h3 id="profile-gpu-execution">Profile GPU Execution</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>nvprof <span class="nt">--print-gpu-trace</span> ./build/symplectic_gpu_benchmark
+</code></pre></div></div>
+
+<h3 id="test-different-hamiltonians">Test Different Hamiltonians</h3>
+
+<p>Modify <code class="language-plaintext highlighter-rouge">henon_heiles_gradients()</code> in <code class="language-plaintext highlighter-rouge">src/cpu/integrators.py</code>:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">henon_heiles_gradients</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="c1"># Current: Hénon-Heiles
+</span>    <span class="n">grad_x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="n">y</span>
+    <span class="n">grad_y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span>
+    
+    <span class="c1"># Alternative: Coupled oscillators
+</span>    <span class="c1"># grad_x = x
+</span>    <span class="c1"># grad_y = y
+</span></code></pre></div></div>
+
+<hr />
+
+<p><strong>This architecture enables clear separation between mathematical correctness (CPU) and computational performance (GPU), making it easy to validate, optimize, and extend.</strong></p>
+
+
+      </section>
+      <footer>
+        
+        <p>This project is maintained by <a href="https://github.com/OleBo">OleBo</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>

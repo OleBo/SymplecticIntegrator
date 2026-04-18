@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Benchmark Experiments | Symplectic Integrator on GPUs</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Benchmark Experiments" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:site_name" content="Symplectic Integrator on GPUs" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Benchmark Experiments" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"Demonstrating mathematical integrity under GPU parallelization and reduced precision.","headline":"Benchmark Experiments","url":"/benchmark_experiment_documentation.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=3866f225d98a6c78601d54880f9b5186278e53d4">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+    <script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    }
+  };
+</script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Symplectic Integrator on GPUs</a></h1>
+
+        
+
+        <p>Demonstrating mathematical integrity under GPU parallelization and reduced precision.</p>
+
+        
+        <p class="view"><a href="https://github.com/OleBo/SymplecticIntegrator">View the Project on GitHub <small>OleBo/SymplecticIntegrator</small></a></p>
+        
+
+        
+
+        
+        <nav>
+  <ul>
+    
+    
+      
+    
+      
+    
+      
+        <li>
+          <a href="/">Home</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/symplectic_integrator_documentation.html">Mathematical Foundations</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/benchmark_experiment_documentation.html">Benchmark Experiments</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/cuda_implementation_documentation.html">CUDA Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/ARCHITECTURE.html">Architecture & Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/TODO.html">ToDo</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/QUICKSTART.html">Quick Start</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/SUMMARY.html">Executive Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/README_CONTAINERIZATION.html">Containerization</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/CONTAINERIZATION_COMPLETE.html">Containerization Full Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER.html">Docker Setup</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER_QUICK_REFERENCE.html">Quick Reference</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/MANIFEST.html">Manifest</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+      </header>
+      <section>
+
+      <h1 id="gpu-accelerated-integrators--benchmark-experiment-documentation">GPU-Accelerated Integrators — Benchmark Experiment Documentation</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>This document describes the <strong>benchmarking methodology</strong> used to evaluate numerical integrators for the Hénon–Heiles system on CPU and GPU implementations.</p>
+
+<p>The goal is not just performance measurement, but a <strong>scientifically meaningful comparison</strong> across:</p>
+
+<ul>
+  <li>Numerical accuracy</li>
+  <li>Energy conservation</li>
+  <li>Long-term stability</li>
+  <li>Computational efficiency</li>
+</ul>
+
+<hr />
+
+<h2 id="1-objective">1. Objective</h2>
+
+<p>The benchmark is designed to answer three core questions:</p>
+
+<h3 id="11-numerical-accuracy-vs-physical-fidelity">1.1 Numerical Accuracy vs Physical Fidelity</h3>
+
+<ul>
+  <li>How accurately does each integrator approximate trajectories?</li>
+  <li>Does higher-order accuracy (e.g. RK4) imply better physical correctness?</li>
+</ul>
+
+<hr />
+
+<h3 id="12-long-term-stability">1.2 Long-Term Stability</h3>
+
+<ul>
+  <li>Does the method preserve invariants such as energy?</li>
+  <li>Does error <strong>drift</strong> or remain <strong>bounded</strong>?</li>
+</ul>
+
+<hr />
+
+<h3 id="13-performance-and-scalability">1.3 Performance and Scalability</h3>
+
+<ul>
+  <li>How does GPU performance scale with number of trajectories?</li>
+  <li>What is the speedup over CPU implementations?</li>
+</ul>
+
+<hr />
+
+<h2 id="2-systems-under-study">2. Systems Under Study</h2>
+
+<h3 id="21-dynamical-system">2.1 Dynamical System</h3>
+
+<p>The Hénon–Heiles Hamiltonian:</p>
+
+<p>[
+H = \frac{1}{2}(p_x^2 + p_y^2) + \frac{1}{2}(x^2 + y^2) + x^2 y - \frac{1}{3} y^3
+]</p>
+
+<hr />
+
+<h3 id="22-state-representation">2.2 State Representation</h3>
+
+<p>Each trajectory is defined by:</p>
+
+<p>[
+z = (x, y, p_x, p_y)
+]</p>
+
+<hr />
+
+<h3 id="23-integrators-compared">2.3 Integrators Compared</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Order</th>
+      <th>Symplectic</th>
+      <th>Expected Behavior</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Euler</td>
+      <td>1</td>
+      <td>❌</td>
+      <td>Fast divergence</td>
+    </tr>
+    <tr>
+      <td>RK4</td>
+      <td>4</td>
+      <td>❌</td>
+      <td>Accurate short-term, energy drift</td>
+    </tr>
+    <tr>
+      <td>Leapfrog</td>
+      <td>2</td>
+      <td>✅</td>
+      <td>Long-term stable</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="3-experimental-design">3. Experimental Design</h2>
+
+<h3 id="31-initial-conditions">3.1 Initial Conditions</h3>
+
+<ul>
+  <li>
+    <p>Multiple trajectories initialized with:</p>
+
+    <ul>
+      <li>Fixed energy level ( H \approx</li>
+    </ul>
+  </li>
+</ul>
+
+
+      </section>
+      <footer>
+        
+        <p>This project is maintained by <a href="https://github.com/OleBo">OleBo</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>

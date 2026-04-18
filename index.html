@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Home | Symplectic Integrator on GPUs</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Home" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:site_name" content="Symplectic Integrator on GPUs" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Home" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","description":"Demonstrating mathematical integrity under GPU parallelization and reduced precision.","headline":"Home","name":"Symplectic Integrator on GPUs","url":"/"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=3866f225d98a6c78601d54880f9b5186278e53d4">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+    <script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    }
+  };
+</script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Symplectic Integrator on GPUs</a></h1>
+
+        
+
+        <p>Demonstrating mathematical integrity under GPU parallelization and reduced precision.</p>
+
+        
+        <p class="view"><a href="https://github.com/OleBo/SymplecticIntegrator">View the Project on GitHub <small>OleBo/SymplecticIntegrator</small></a></p>
+        
+
+        
+
+        
+        <nav>
+  <ul>
+    
+    
+      
+    
+      
+    
+      
+        <li>
+          <a href="/">Home</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/symplectic_integrator_documentation.html">Mathematical Foundations</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/benchmark_experiment_documentation.html">Benchmark Experiments</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/cuda_implementation_documentation.html">CUDA Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/ARCHITECTURE.html">Architecture & Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/TODO.html">ToDo</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/QUICKSTART.html">Quick Start</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/SUMMARY.html">Executive Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/README_CONTAINERIZATION.html">Containerization</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/CONTAINERIZATION_COMPLETE.html">Containerization Full Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER.html">Docker Setup</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER_QUICK_REFERENCE.html">Quick Reference</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/MANIFEST.html">Manifest</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+      </header>
+      <section>
+
+      <h1 id="gpu-accelerated-hamiltonian-integrators">GPU-Accelerated Hamiltonian Integrators</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>This project implements <strong>GPU-accelerated numerical integrators</strong> for simulating nonlinear Hamiltonian systems, with a focus on the <strong>Hénon–Heiles system</strong> — a classical benchmark for studying chaos and long-term dynamical behavior.</p>
+
+<p>The core idea is to combine:</p>
+
+<ul>
+  <li><strong>Mathematical structure (Hamiltonian mechanics)</strong></li>
+  <li><strong>Advanced numerical methods (symplectic integrators)</strong></li>
+  <li><strong>High-performance computing (CUDA on GPUs)</strong></li>
+</ul>
+
+<p>to simulate <strong>millions of trajectories efficiently and accurately</strong>.</p>
+
+<hr />
+
+<h2 id="why-this-project-matters">Why This Project Matters</h2>
+
+<p>Simulating physical systems over long time horizons is fundamentally challenging:</p>
+
+<ul>
+  <li>Standard high-order methods (e.g. RK4) introduce <strong>energy drift</strong></li>
+  <li>Physical systems require preservation of <strong>geometric structure</strong></li>
+  <li>GPUs enable massive parallel exploration of phase space</li>
+</ul>
+
+<p>This project demonstrates that:</p>
+
+<blockquote>
+  <p><strong>Structure-preserving algorithms + GPU parallelism = scalable and physically correct simulations</strong></p>
+</blockquote>
+
+<hr />
+
+<h2 id="project-documentation">Project Documentation</h2>
+
+<h3 id="-mathematical-documentation">📘 Mathematical Documentation</h3>
+
+<p>👉 <a href="/symplectic_integrator_documentation.html">Symplectic Integrator — Mathematical Documentation</a></p>
+
+<p>Covers:</p>
+
+<ul>
+  <li>Hamiltonian formulation</li>
+  <li>Hénon–Heiles system</li>
+  <li>Symplectic integration theory</li>
+  <li>Energy conservation and phase-space structure</li>
+  <li>Visual diagrams and plots</li>
+</ul>
+
+<hr />
+
+<h3 id="-benchmark-experiment">🧪 Benchmark Experiment</h3>
+
+<p>👉 <a href="/benchmark_experiment_documentation.html">Benchmark Experiment Documentation</a></p>
+
+<p>Covers:</p>
+
+<ul>
+  <li>Experimental design and methodology</li>
+  <li>Accuracy vs stability comparison</li>
+  <li>Energy drift analysis</li>
+  <li>GPU vs CPU performance evaluation</li>
+  <li>Reproducibility setup</li>
+</ul>
+
+<hr />
+
+<h3 id="️-cuda-implementation">⚙️ CUDA Implementation</h3>
+
+<p>👉 <a href="/cuda_implementation_documentation.html">CUDA Implementation Documentation</a></p>
+
+<p>Covers:</p>
+
+<ul>
+  <li>Kernel design and parallelization strategy</li>
+  <li>Memory layout (SoA vs AoS)</li>
+  <li>Annotated CUDA kernels</li>
+  <li>Performance optimization techniques</li>
+  <li>Practical HPC considerations</li>
+</ul>
+
+<hr />
+
+<h2 id="key-features">Key Features</h2>
+
+<ul>
+  <li>✅ Symplectic (Leapfrog) integrator for long-term stability</li>
+  <li>✅ RK4 and Euler baselines for comparison</li>
+  <li>✅ GPU parallelization (one trajectory per thread)</li>
+  <li>✅ Energy diagnostics and validation</li>
+  <li>✅ Visualization-ready outputs</li>
+</ul>
+
+<hr />
+
+<h2 id="-key-insight">📌 Key Insight</h2>
+
+<p>This project highlights a fundamental principle in scientific computing:</p>
+
+<blockquote>
+  <p><strong>Numerical accuracy alone is not enough — preserving the underlying physics is essential.</strong></p>
+</blockquote>
+
+<hr />
+
+<h2 id="-author">👤 Author</h2>
+
+<p>This project is part of a portfolio exploring:</p>
+<ul>
+  <li>Numerical linear algebra</li>
+  <li>GPU programming (CUDA)</li>
+  <li>High-performance computing systems</li>
+</ul>
+
+
+      </section>
+      <footer>
+        
+        <p>This project is maintained by <a href="https://github.com/OleBo">OleBo</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>

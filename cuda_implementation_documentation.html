@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>CUDA Implementation | Symplectic Integrator on GPUs</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="CUDA Implementation" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:site_name" content="Symplectic Integrator on GPUs" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="CUDA Implementation" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"Demonstrating mathematical integrity under GPU parallelization and reduced precision.","headline":"CUDA Implementation","url":"/cuda_implementation_documentation.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=3866f225d98a6c78601d54880f9b5186278e53d4">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+    <script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    }
+  };
+</script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Symplectic Integrator on GPUs</a></h1>
+
+        
+
+        <p>Demonstrating mathematical integrity under GPU parallelization and reduced precision.</p>
+
+        
+        <p class="view"><a href="https://github.com/OleBo/SymplecticIntegrator">View the Project on GitHub <small>OleBo/SymplecticIntegrator</small></a></p>
+        
+
+        
+
+        
+        <nav>
+  <ul>
+    
+    
+      
+    
+      
+    
+      
+        <li>
+          <a href="/">Home</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/symplectic_integrator_documentation.html">Mathematical Foundations</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/benchmark_experiment_documentation.html">Benchmark Experiments</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/cuda_implementation_documentation.html">CUDA Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/ARCHITECTURE.html">Architecture & Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/TODO.html">ToDo</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/QUICKSTART.html">Quick Start</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/SUMMARY.html">Executive Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/README_CONTAINERIZATION.html">Containerization</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/CONTAINERIZATION_COMPLETE.html">Containerization Full Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER.html">Docker Setup</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER_QUICK_REFERENCE.html">Quick Reference</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/MANIFEST.html">Manifest</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+      </header>
+      <section>
+
+      <h1 id="cuda-implementation-documentation--gpu-accelerated-integrators">CUDA Implementation Documentation — GPU-Accelerated Integrators</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>This document explains the <strong>CUDA implementation details</strong> of the GPU-accelerated integrators for the Hénon–Heiles system.</p>
+
+<p>The focus is on:</p>
+
+<ul>
+  <li>Mapping Hamiltonian dynamics to GPU kernels</li>
+  <li>Memory layout and performance considerations</li>
+  <li>Kernel design for numerical integrators</li>
+  <li>Practical CUDA optimization strategies</li>
+</ul>
+
+<hr />
+
+<h2 id="1-computational-problem">1. Computational Problem</h2>
+
+<p>We simulate a large number (N) of independent trajectories:</p>
+
+<p>[
+z_i(t) = (x_i, y_i, p_{x,i}, p_{y,i}), \quad i = 1, \dots, N
+]</p>
+
+<p>Each trajectory evolves according to:</p>
+
+<p>[
+\dot{z}_i = f(z_i)
+]</p>
+
+<p><strong>Key property:</strong></p>
+
+<blockquote>
+  <p>All trajectories are independent → ideal for massive parallelism.</p>
+</blockquote>
+
+<hr />
+
+<h2 id="2-parallelization-strategy">2. Parallelization Strategy</h2>
+
+<h3 id="21-thread-mapping">2.1 Thread Mapping</h3>
+
+<p>Each CUDA thread is responsible for <strong>one trajectory</strong>:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>If:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">i</span> <span class="o">&lt;</span> <span class="n">N</span>
+</code></pre></div></div>
+
+<p>then thread <code class="language-plaintext highlighter-rouge">i</code> updates:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="22-execution-model">2.2 Execution Model</h3>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Grid
+ ├── Block 0
+ │    ├── Thread 0 → Trajectory 0
+ │    ├── Thread 1 → Trajectory 1
+ │    └── ...
+ ├── Block 1
+ │    └── ...
+ └── ...
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="3-memory-layout">3. Memory Layout</h2>
+
+<h3 id="31-structure-of-arrays-soa">3.1 Structure of Arrays (SoA)</h3>
+
+<p>The implementation uses:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">double</span><span class="o">*</span> <span class="n">x</span><span class="p">;</span>
+<span class="kt">double</span><span class="o">*</span> <span class="n">y</span><span class="p">;</span>
+<span class="kt">double</span><span class="o">*</span> <span class="n">px</span><span class="p">;</span>
+<span class="kt">double</span><span class="o">*</span> <span class="n">py</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>instead of:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">State</span> <span class="p">{</span> <span class="kt">double</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">px</span><span class="p">,</span> <span class="n">py</span><span class="p">;</span> <span class="p">};</span>
+<span class="n">State</span><span class="o">*</span> <span class="n">states</span><span class="p">;</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="32-why-soa">3.2 Why SoA?</h3>
+
+<p><strong>Benefits:</strong></p>
+
+<ul>
+  <li>Coalesced memory access</li>
+  <li>Better cache utilization</li>
+  <li>Higher memory bandwidth</li>
+</ul>
+
+<hr />
+
+<h3 id="33-coalesced-access-pattern">3.3 Coalesced Access Pattern</h3>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Thread 0 → x[0]
+Thread 1 → x[1]
+Thread 2 → x[2]
+...
+</code></pre></div></div>
+
+<p>This allows the GPU to fetch memory in <strong>contiguous blocks</strong>.</p>
+
+<hr />
+
+<h2 id="4-kernel-design">4. Kernel Design</h2>
+
+<h3 id="41-general-structure">4.1 General Structure</h3>
+
+<p>Each kernel follows the pattern:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">integrator_kernel</span><span class="p">(...)</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">N</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="c1">// Load state</span>
+    <span class="kt">double</span> <span class="n">xi</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">yi</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pxi</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pyi</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+
+    <span class="c1">// Time stepping loop</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">step</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">step</span> <span class="o">&lt;</span> <span class="n">steps</span><span class="p">;</span> <span class="o">++</span><span class="n">step</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// integrator update</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Store state</span>
+    <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">xi</span><span class="p">;</span>
+    <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">yi</span><span class="p">;</span>
+    <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pxi</span><span class="p">;</span>
+    <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pyi</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="42-design-choices">4.2 Design Choices</h3>
+
+<ul>
+  <li><strong>Register usage:</strong> state variables kept in registers</li>
+  <li><strong>Minimized global memory access:</strong> load once, store once</li>
+  <li><strong>No synchronization:</strong> independent threads</li>
+</ul>
+
+<hr />
+
+<h2 id="5-gradient-computation">5. Gradient Computation</h2>
+
+<h3 id="51-device-function">5.1 Device Function</h3>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">__device__</span> <span class="kt">void</span> <span class="n">compute_gradients</span><span class="p">(</span><span class="kt">double</span> <span class="n">x</span><span class="p">,</span> <span class="kt">double</span> <span class="n">y</span><span class="p">,</span>
+                                  <span class="kt">double</span><span class="o">&amp;</span> <span class="n">dVdx</span><span class="p">,</span> <span class="kt">double</span><span class="o">&amp;</span> <span class="n">dVdy</span><span class="p">)</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="52-mathematical-form">5.2 Mathematical Form</h3>
+
+<p>[
+\frac{\partial V}{\partial x} = x + 2xy
+]
+[
+\frac{\partial V}{\partial y} = y + x^2 - y^2
+]</p>
+
+<hr />
+
+<h3 id="53-optimization-notes">5.3 Optimization Notes</h3>
+
+<ul>
+  <li>Inline device function → avoids function call overhead</li>
+  <li>Uses only registers → no memory traffic</li>
+</ul>
+
+<hr />
+
+<h2 id="6-symplectic-integrator-kernel">6. Symplectic Integrator Kernel</h2>
+
+<h3 id="61-algorithm-in-cuda">6.1 Algorithm in CUDA</h3>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Half-step momentum update</span>
+<span class="n">px</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdx</span><span class="p">;</span>
+<span class="n">py</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdy</span><span class="p">;</span>
+
+<span class="c1">// Full-step position update</span>
+<span class="n">x</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">px</span><span class="p">;</span>
+<span class="n">y</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">py</span><span class="p">;</span>
+
+<span class="c1">// Recompute gradients</span>
+<span class="n">compute_gradients</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">dVdx</span><span class="p">,</span> <span class="n">dVdy</span><span class="p">);</span>
+
+<span class="c1">// Second half-step momentum update</span>
+<span class="n">px</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdx</span><span class="p">;</span>
+<span class="n">py</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdy</span><span class="p">;</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="62-key-property">6.2 Key Property</h3>
+
+<blockquote>
+  <p>This update is <strong>symplectic</strong>, meaning it preserves phase-space structure.</p>
+</blockquote>
+
+<hr />
+
+<h2 id="7-rk4-kernel">7. RK4 Kernel</h2>
+
+<h3 id="71-structure">7.1 Structure</h3>
+
+<p>RK4 requires multiple intermediate evaluations:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">k1</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+<span class="n">k2</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="n">dt</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">k1</span><span class="p">)</span>
+<span class="n">k3</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="n">dt</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">k2</span><span class="p">)</span>
+<span class="n">k4</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k3</span><span class="p">)</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="72-gpu-implications">7.2 GPU Implications</h3>
+
+<ul>
+  <li>More arithmetic per step</li>
+  <li>Higher register pressure</li>
+  <li>More gradient evaluations</li>
+</ul>
+
+<hr />
+
+<h2 id="8-euler-kernel">8. Euler Kernel</h2>
+
+<h3 id="81-update-rule">8.1 Update Rule</h3>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">px</span><span class="p">;</span>
+<span class="n">y</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">py</span><span class="p">;</span>
+<span class="n">px</span> <span class="o">-=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdx</span><span class="p">;</span>
+<span class="n">py</span> <span class="o">-=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdy</span><span class="p">;</span>
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="82-role">8.2 Role</h3>
+
+<ul>
+  <li>Baseline method</li>
+  <li>Debugging reference</li>
+  <li>Not suitable for production simulations</li>
+</ul>
+
+<hr />
+
+<h2 id="9-energy-kernel">9. Energy Kernel</h2>
+
+<h3 id="91-purpose">9.1 Purpose</h3>
+
+<p>Compute:</p>
+
+<p>[
+E_i = \frac{1}{2}(p_x^2 + p_y^2) + V(x,y)
+]</p>
+
+<hr />
+
+<h3 id="92-cuda-implementation-pattern">9.2 CUDA Implementation Pattern</h3>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">energy_kernel</span><span class="p">(...)</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">N</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="n">energy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">...;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="10-hostdevice-interaction">10. Host–Device Interaction</h2>
+
+<h3 id="101-workflow">10.1 Workflow</h3>
+
+<ol>
+  <li>Allocate device memory (<code class="language-plaintext highlighter-rouge">cudaMalloc</code>)</li>
+  <li>Copy data to GPU (<code class="language-plaintext highlighter-rouge">cudaMemcpy</code>)</li>
+  <li>Launch kernel</li>
+  <li>Copy results back</li>
+  <li>Free memory</li>
+</ol>
+
+<hr />
+
+<h3 id="102-example">10.2 Example</h3>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">cudaMemcpy</span><span class="p">(</span><span class="n">d_x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">cudaMemcpyHostToDevice</span><span class="p">);</span>
+
+<span class="n">kernel</span><span class="o">&lt;&lt;&lt;</span><span class="n">grid</span><span class="p">,</span> <span class="n">block</span><span class="o">&gt;&gt;&gt;</span><span class="p">(...);</span>
+
+<span class="n">cudaMemcpy</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">d_x</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">cudaMemcpyDeviceToHost</span><span class="p">);</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="11-performance-considerations">11. Performance Considerations</h2>
+
+<h3 id="111-occupancy">11.1 Occupancy</h3>
+
+<ul>
+  <li>Choose block size (e.g. 128–256 threads)</li>
+  <li>
+    <p>Balance:</p>
+
+    <ul>
+      <li>register usage</li>
+      <li>active warps</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h3 id="112-arithmetic-intensity">11.2 Arithmetic Intensity</h3>
+
+<p>Symplectic integrator:</p>
+
+<ul>
+  <li>Moderate arithmetic</li>
+  <li>Low memory traffic</li>
+  <li>Good GPU utilization</li>
+</ul>
+
+<p>RK4:</p>
+
+<ul>
+  <li>High arithmetic</li>
+  <li>Potential register bottleneck</li>
+</ul>
+
+<hr />
+
+<h3 id="113-memory-bottlenecks">11.3 Memory Bottlenecks</h3>
+
+<p>Avoid:</p>
+
+<ul>
+  <li>Repeated global loads/stores inside loop</li>
+  <li>Uncoalesced memory access</li>
+</ul>
+
+<hr />
+
+<h2 id="12-scaling-behavior">12. Scaling Behavior</h2>
+
+<h3 id="121-strong-scaling">12.1 Strong Scaling</h3>
+
+<p>Fix number of trajectories, vary GPU:</p>
+
+<ul>
+  <li>Limited by memory bandwidth</li>
+</ul>
+
+<hr />
+
+<h3 id="122-weak-scaling">12.2 Weak Scaling</h3>
+
+<p>Increase (N):</p>
+
+<p>[
+\text{Runtime} \sim \mathcal{O}(N)
+]</p>
+
+<p>GPU handles millions of trajectories efficiently.</p>
+
+<hr />
+
+<h2 id="13-precision-considerations">13. Precision Considerations</h2>
+
+<h3 id="131-fp32-vs-fp64">13.1 FP32 vs FP64</h3>
+
+<ul>
+  <li>FP32: faster, less accurate</li>
+  <li>FP64: slower, required for long simulations</li>
+</ul>
+
+<hr />
+
+<h3 id="132-mixed-precision-advanced">13.2 Mixed Precision (Advanced)</h3>
+
+<ul>
+  <li>Store state in FP32</li>
+  <li>Accumulate energy in FP64</li>
+</ul>
+
+<hr />
+
+<h2 id="14-common-pitfalls">14. Common Pitfalls</h2>
+
+<ul>
+  <li>❌ Divergence due to large timestep</li>
+  <li>❌ Energy drift (non-symplectic methods)</li>
+  <li>❌ Register spilling in RK4</li>
+  <li>❌ Poor memory layout (AoS)</li>
+</ul>
+
+<hr />
+
+<h2 id="15-summary">15. Summary</h2>
+
+<p>This CUDA implementation demonstrates:</p>
+
+<ul>
+  <li>Efficient mapping of <strong>Hamiltonian dynamics to GPU kernels</strong></li>
+  <li>Importance of <strong>memory layout (SoA)</strong></li>
+  <li>Trade-offs between <strong>numerical accuracy and GPU performance</strong></li>
+  <li>Why <strong>symplectic integrators are ideal for large-scale simulations</strong></li>
+</ul>
+
+<hr />
+
+<h2 id="final-insight">Final Insight</h2>
+
+<blockquote>
+  <p>GPUs excel when the mathematical structure matches the hardware model.</p>
+</blockquote>
+
+<p>Here:</p>
+
+<ul>
+  <li>Independent trajectories → parallel threads</li>
+  <li>Local computations → register usage</li>
+  <li>Minimal communication → high scalability</li>
+</ul>
+
+<p>This alignment is what enables <strong>high-performance scientific computing</strong>.</p>
+
+<h1 id="cuda-implementation-documentation--annotated-code-snippets">CUDA Implementation Documentation — Annotated Code Snippets</h1>
+
+<p>This section adds <strong>line-by-line annotated CUDA kernels</strong> for the three integrators and key helpers. The goal is to make the mapping from <strong>mathematics → GPU execution</strong> completely explicit.</p>
+
+<hr />
+
+<h2 id="1-thread-indexing--guard">1. Thread Indexing &amp; Guard</h2>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Compute global thread index</span>
+<span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+
+<span class="c1">// Guard against out-of-bounds threads</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">N</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p><strong>Explanation</strong></p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">blockIdx.x</code>: block id in the grid</li>
+  <li><code class="language-plaintext highlighter-rouge">blockDim.x</code>: threads per block</li>
+  <li><code class="language-plaintext highlighter-rouge">threadIdx.x</code>: thread id within block</li>
+  <li>Global index <code class="language-plaintext highlighter-rouge">i</code> maps <strong>thread → trajectory</strong></li>
+  <li>Guard avoids illegal memory access when grid is oversized</li>
+</ul>
+
+<hr />
+
+<h2 id="2-device-function-gradient-of-potential">2. Device Function: Gradient of Potential</h2>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">__device__</span> <span class="n">__forceinline__</span>
+<span class="kt">void</span> <span class="nf">compute_gradients</span><span class="p">(</span><span class="kt">double</span> <span class="n">x</span><span class="p">,</span> <span class="kt">double</span> <span class="n">y</span><span class="p">,</span>
+                       <span class="kt">double</span><span class="o">&amp;</span> <span class="n">dVdx</span><span class="p">,</span> <span class="kt">double</span><span class="o">&amp;</span> <span class="n">dVdy</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// ∂V/∂x = x + 2xy</span>
+    <span class="n">dVdx</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">;</span>
+
+    <span class="c1">// ∂V/∂y = y + x^2 - y^2</span>
+    <span class="n">dVdy</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="o">-</span> <span class="n">y</span> <span class="o">*</span> <span class="n">y</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Explanation</strong></p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">__device__</code>: runs on GPU</li>
+  <li><code class="language-plaintext highlighter-rouge">__forceinline__</code>: encourages inlining → avoids call overhead</li>
+  <li>Uses only registers → <strong>no global memory traffic</strong></li>
+  <li>Direct implementation of the analytical gradient</li>
+</ul>
+
+<hr />
+
+<h2 id="3-symplectic-leapfrog-kernel">3. Symplectic (Leapfrog) Kernel</h2>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">__global__</span>
+<span class="kt">void</span> <span class="nf">symplectic_kernel</span><span class="p">(</span><span class="kt">double</span><span class="o">*</span> <span class="n">x</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">y</span><span class="p">,</span>
+                       <span class="kt">double</span><span class="o">*</span> <span class="n">px</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">py</span><span class="p">,</span>
+                       <span class="kt">int</span> <span class="n">N</span><span class="p">,</span> <span class="kt">int</span> <span class="n">steps</span><span class="p">,</span> <span class="kt">double</span> <span class="n">dt</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">N</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="c1">// --- Load state into registers (fast) ---</span>
+    <span class="kt">double</span> <span class="n">xi</span>  <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">yi</span>  <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pxi</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pyi</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+
+    <span class="kt">double</span> <span class="n">dVdx</span><span class="p">,</span> <span class="n">dVdy</span><span class="p">;</span>
+
+    <span class="c1">// --- Time integration loop ---</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">s</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">s</span> <span class="o">&lt;</span> <span class="n">steps</span><span class="p">;</span> <span class="o">++</span><span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="c1">// Compute gradient at current position</span>
+        <span class="n">compute_gradients</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">dVdx</span><span class="p">,</span> <span class="n">dVdy</span><span class="p">);</span>
+
+        <span class="c1">// (1) Half-step momentum update (Kick)</span>
+        <span class="n">pxi</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdx</span><span class="p">;</span>
+        <span class="n">pyi</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdy</span><span class="p">;</span>
+
+        <span class="c1">// (2) Full-step position update (Drift)</span>
+        <span class="n">xi</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">pxi</span><span class="p">;</span>
+        <span class="n">yi</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">pyi</span><span class="p">;</span>
+
+        <span class="c1">// Recompute gradient at new position</span>
+        <span class="n">compute_gradients</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">dVdx</span><span class="p">,</span> <span class="n">dVdy</span><span class="p">);</span>
+
+        <span class="c1">// (3) Half-step momentum update (Kick)</span>
+        <span class="n">pxi</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdx</span><span class="p">;</span>
+        <span class="n">pyi</span> <span class="o">-=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdy</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">// --- Store results back to global memory ---</span>
+    <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  <span class="o">=</span> <span class="n">xi</span><span class="p">;</span>
+    <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  <span class="o">=</span> <span class="n">yi</span><span class="p">;</span>
+    <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pxi</span><span class="p">;</span>
+    <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pyi</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Key Points</strong></p>
+
+<ul>
+  <li>State loaded <strong>once</strong> → stored <strong>once</strong></li>
+  <li>Loop operates entirely in <strong>registers</strong></li>
+  <li>
+    <p>Implements:</p>
+
+    <ul>
+      <li>Kick → Drift → Kick splitting</li>
+    </ul>
+  </li>
+  <li>Preserves <strong>symplectic structure</strong></li>
+</ul>
+
+<hr />
+
+<h2 id="4-rk4-kernel-annotated">4. RK4 Kernel (Annotated)</h2>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">__global__</span>
+<span class="kt">void</span> <span class="nf">rk4_kernel</span><span class="p">(</span><span class="kt">double</span><span class="o">*</span> <span class="n">x</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">y</span><span class="p">,</span>
+                <span class="kt">double</span><span class="o">*</span> <span class="n">px</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">py</span><span class="p">,</span>
+                <span class="kt">int</span> <span class="n">N</span><span class="p">,</span> <span class="kt">int</span> <span class="n">steps</span><span class="p">,</span> <span class="kt">double</span> <span class="n">dt</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">N</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="kt">double</span> <span class="n">xi</span>  <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">yi</span>  <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pxi</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pyi</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">s</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">s</span> <span class="o">&lt;</span> <span class="n">steps</span><span class="p">;</span> <span class="o">++</span><span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="c1">// k1</span>
+        <span class="kt">double</span> <span class="n">dVdx1</span><span class="p">,</span> <span class="n">dVdy1</span><span class="p">;</span>
+        <span class="n">compute_gradients</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">dVdx1</span><span class="p">,</span> <span class="n">dVdy1</span><span class="p">);</span>
+
+        <span class="kt">double</span> <span class="n">k1_x</span>  <span class="o">=</span> <span class="n">pxi</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k1_y</span>  <span class="o">=</span> <span class="n">pyi</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k1_px</span> <span class="o">=</span> <span class="o">-</span><span class="n">dVdx1</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k1_py</span> <span class="o">=</span> <span class="o">-</span><span class="n">dVdy1</span><span class="p">;</span>
+
+        <span class="c1">// k2 (midpoint using k1)</span>
+        <span class="kt">double</span> <span class="n">x2</span>  <span class="o">=</span> <span class="n">xi</span>  <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k1_x</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">y2</span>  <span class="o">=</span> <span class="n">yi</span>  <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k1_y</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">px2</span> <span class="o">=</span> <span class="n">pxi</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k1_px</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">py2</span> <span class="o">=</span> <span class="n">pyi</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k1_py</span><span class="p">;</span>
+
+        <span class="kt">double</span> <span class="n">dVdx2</span><span class="p">,</span> <span class="n">dVdy2</span><span class="p">;</span>
+        <span class="n">compute_gradients</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">dVdx2</span><span class="p">,</span> <span class="n">dVdy2</span><span class="p">);</span>
+
+        <span class="kt">double</span> <span class="n">k2_x</span>  <span class="o">=</span> <span class="n">px2</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k2_y</span>  <span class="o">=</span> <span class="n">py2</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k2_px</span> <span class="o">=</span> <span class="o">-</span><span class="n">dVdx2</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k2_py</span> <span class="o">=</span> <span class="o">-</span><span class="n">dVdy2</span><span class="p">;</span>
+
+        <span class="c1">// k3 (another midpoint)</span>
+        <span class="kt">double</span> <span class="n">x3</span>  <span class="o">=</span> <span class="n">xi</span>  <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k2_x</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">y3</span>  <span class="o">=</span> <span class="n">yi</span>  <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k2_y</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">px3</span> <span class="o">=</span> <span class="n">pxi</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k2_px</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">py3</span> <span class="o">=</span> <span class="n">pyi</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k2_py</span><span class="p">;</span>
+
+        <span class="kt">double</span> <span class="n">dVdx3</span><span class="p">,</span> <span class="n">dVdy3</span><span class="p">;</span>
+        <span class="n">compute_gradients</span><span class="p">(</span><span class="n">x3</span><span class="p">,</span> <span class="n">y3</span><span class="p">,</span> <span class="n">dVdx3</span><span class="p">,</span> <span class="n">dVdy3</span><span class="p">);</span>
+
+        <span class="kt">double</span> <span class="n">k3_x</span>  <span class="o">=</span> <span class="n">px3</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k3_y</span>  <span class="o">=</span> <span class="n">py3</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k3_px</span> <span class="o">=</span> <span class="o">-</span><span class="n">dVdx3</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k3_py</span> <span class="o">=</span> <span class="o">-</span><span class="n">dVdy3</span><span class="p">;</span>
+
+        <span class="c1">// k4 (full step)</span>
+        <span class="kt">double</span> <span class="n">x4</span>  <span class="o">=</span> <span class="n">xi</span>  <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k3_x</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">y4</span>  <span class="o">=</span> <span class="n">yi</span>  <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k3_y</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">px4</span> <span class="o">=</span> <span class="n">pxi</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k3_px</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">py4</span> <span class="o">=</span> <span class="n">pyi</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">k3_py</span><span class="p">;</span>
+
+        <span class="kt">double</span> <span class="n">dVdx4</span><span class="p">,</span> <span class="n">dVdy4</span><span class="p">;</span>
+        <span class="n">compute_gradients</span><span class="p">(</span><span class="n">x4</span><span class="p">,</span> <span class="n">y4</span><span class="p">,</span> <span class="n">dVdx4</span><span class="p">,</span> <span class="n">dVdy4</span><span class="p">);</span>
+
+        <span class="kt">double</span> <span class="n">k4_x</span>  <span class="o">=</span> <span class="n">px4</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k4_y</span>  <span class="o">=</span> <span class="n">py4</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k4_px</span> <span class="o">=</span> <span class="o">-</span><span class="n">dVdx4</span><span class="p">;</span>
+        <span class="kt">double</span> <span class="n">k4_py</span> <span class="o">=</span> <span class="o">-</span><span class="n">dVdy4</span><span class="p">;</span>
+
+        <span class="c1">// Combine increments</span>
+        <span class="n">xi</span>  <span class="o">+=</span> <span class="n">dt</span> <span class="o">/</span> <span class="mf">6.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">k1_x</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">k2_x</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">k3_x</span>  <span class="o">+</span> <span class="n">k4_x</span><span class="p">);</span>
+        <span class="n">yi</span>  <span class="o">+=</span> <span class="n">dt</span> <span class="o">/</span> <span class="mf">6.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">k1_y</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">k2_y</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">k3_y</span>  <span class="o">+</span> <span class="n">k4_y</span><span class="p">);</span>
+        <span class="n">pxi</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">/</span> <span class="mf">6.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">k1_px</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">k2_px</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">k3_px</span> <span class="o">+</span> <span class="n">k4_px</span><span class="p">);</span>
+        <span class="n">pyi</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">/</span> <span class="mf">6.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">k1_py</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">k2_py</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">k3_py</span> <span class="o">+</span> <span class="n">k4_py</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  <span class="o">=</span> <span class="n">xi</span><span class="p">;</span>
+    <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  <span class="o">=</span> <span class="n">yi</span><span class="p">;</span>
+    <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pxi</span><span class="p">;</span>
+    <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pyi</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Key Points</strong></p>
+
+<ul>
+  <li>4 gradient evaluations per step</li>
+  <li>High arithmetic intensity</li>
+  <li>More <strong>register pressure</strong> → possible spilling</li>
+  <li>Not structure-preserving</li>
+</ul>
+
+<hr />
+
+<h2 id="5-euler-kernel-baseline">5. Euler Kernel (Baseline)</h2>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">__global__</span>
+<span class="kt">void</span> <span class="nf">euler_kernel</span><span class="p">(</span><span class="kt">double</span><span class="o">*</span> <span class="n">x</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">y</span><span class="p">,</span>
+                  <span class="kt">double</span><span class="o">*</span> <span class="n">px</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">py</span><span class="p">,</span>
+                  <span class="kt">int</span> <span class="n">N</span><span class="p">,</span> <span class="kt">int</span> <span class="n">steps</span><span class="p">,</span> <span class="kt">double</span> <span class="n">dt</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">N</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="kt">double</span> <span class="n">xi</span>  <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">yi</span>  <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pxi</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pyi</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+
+    <span class="kt">double</span> <span class="n">dVdx</span><span class="p">,</span> <span class="n">dVdy</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">s</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">s</span> <span class="o">&lt;</span> <span class="n">steps</span><span class="p">;</span> <span class="o">++</span><span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">compute_gradients</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">dVdx</span><span class="p">,</span> <span class="n">dVdy</span><span class="p">);</span>
+
+        <span class="c1">// Explicit Euler update</span>
+        <span class="n">xi</span>  <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">pxi</span><span class="p">;</span>
+        <span class="n">yi</span>  <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">pyi</span><span class="p">;</span>
+        <span class="n">pxi</span> <span class="o">-=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdx</span><span class="p">;</span>
+        <span class="n">pyi</span> <span class="o">-=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">dVdy</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  <span class="o">=</span> <span class="n">xi</span><span class="p">;</span>
+    <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  <span class="o">=</span> <span class="n">yi</span><span class="p">;</span>
+    <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pxi</span><span class="p">;</span>
+    <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pyi</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Key Points</strong></p>
+
+<ul>
+  <li>Minimal computation</li>
+  <li>Useful for debugging</li>
+  <li>Physically unstable</li>
+</ul>
+
+<hr />
+
+<h2 id="6-energy-kernel">6. Energy Kernel</h2>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">__global__</span>
+<span class="kt">void</span> <span class="nf">energy_kernel</span><span class="p">(</span><span class="k">const</span> <span class="kt">double</span><span class="o">*</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="kt">double</span><span class="o">*</span> <span class="n">y</span><span class="p">,</span>
+                   <span class="k">const</span> <span class="kt">double</span><span class="o">*</span> <span class="n">px</span><span class="p">,</span> <span class="k">const</span> <span class="kt">double</span><span class="o">*</span> <span class="n">py</span><span class="p">,</span>
+                   <span class="kt">double</span><span class="o">*</span> <span class="n">E</span><span class="p">,</span> <span class="kt">int</span> <span class="n">N</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">N</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+    <span class="kt">double</span> <span class="n">xi</span>  <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">yi</span>  <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pxi</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+    <span class="kt">double</span> <span class="n">pyi</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+
+    <span class="c1">// Kinetic energy</span>
+    <span class="kt">double</span> <span class="n">T</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">pxi</span> <span class="o">*</span> <span class="n">pxi</span> <span class="o">+</span> <span class="n">pyi</span> <span class="o">*</span> <span class="n">pyi</span><span class="p">);</span>
+
+    <span class="c1">// Potential energy</span>
+    <span class="kt">double</span> <span class="n">V</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">xi</span> <span class="o">*</span> <span class="n">xi</span> <span class="o">+</span> <span class="n">yi</span> <span class="o">*</span> <span class="n">yi</span><span class="p">)</span>
+             <span class="o">+</span> <span class="n">xi</span> <span class="o">*</span> <span class="n">xi</span> <span class="o">*</span> <span class="n">yi</span>
+             <span class="o">-</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">yi</span> <span class="o">*</span> <span class="n">yi</span> <span class="o">*</span> <span class="n">yi</span><span class="p">;</span>
+
+    <span class="n">E</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">T</span> <span class="o">+</span> <span class="n">V</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Key Points</strong></p>
+
+<ul>
+  <li>Purely <strong>read-only inputs → write-only output</strong></li>
+  <li>Memory bandwidth bound</li>
+  <li>Ideal for parallel reduction extensions</li>
+</ul>
+
+<hr />
+
+<h2 id="7-kernel-launch-configuration">7. Kernel Launch Configuration</h2>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">blockSize</span> <span class="o">=</span> <span class="mi">256</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">gridSize</span>  <span class="o">=</span> <span class="p">(</span><span class="n">N</span> <span class="o">+</span> <span class="n">blockSize</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">blockSize</span><span class="p">;</span>
+
+<span class="n">symplectic_kernel</span><span class="o">&lt;&lt;&lt;</span><span class="n">gridSize</span><span class="p">,</span> <span class="n">blockSize</span><span class="o">&gt;&gt;&gt;</span><span class="p">(</span><span class="n">d_x</span><span class="p">,</span> <span class="n">d_y</span><span class="p">,</span> <span class="n">d_px</span><span class="p">,</span> <span class="n">d_py</span><span class="p">,</span>
+                                           <span class="n">N</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">dt</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p><strong>Explanation</strong></p>
+
+<ul>
+  <li>Ensures coverage of all (N) trajectories</li>
+  <li>Typical block size: 128–256 (hardware dependent)</li>
+</ul>
+
+<hr />
+
+<h2 id="8-performance-checklist-practical">8. Performance Checklist (Practical)</h2>
+
+<ul>
+  <li>✔ Load state into registers once</li>
+  <li>✔ Avoid global memory inside loop</li>
+  <li>✔ Use SoA layout</li>
+  <li>✔ Inline small device functions</li>
+  <li>✔ Watch register usage (<code class="language-plaintext highlighter-rouge">nvcc --ptxas-options=-v</code>)</li>
+  <li>✔ Tune block size experimentally</li>
+</ul>
+
+<hr />
+
+<h2 id="final-insight-1">Final Insight</h2>
+
+<p>These kernels illustrate a key HPC principle:</p>
+
+<blockquote>
+  <p><strong>Performance emerges when mathematical structure aligns with hardware structure.</strong></p>
+</blockquote>
+
+<ul>
+  <li>Independent trajectories → thread-level parallelism</li>
+  <li>Local updates → register reuse</li>
+  <li>Minimal communication → massive scalability</li>
+</ul>
+
+<hr />
+
+
+      </section>
+      <footer>
+        
+        <p>This project is maintained by <a href="https://github.com/OleBo">OleBo</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>

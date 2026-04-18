@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Quick Reference | Symplectic Integrator on GPUs</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Quick Reference" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:description" content="Demonstrating mathematical integrity under GPU parallelization and reduced precision." />
+<meta property="og:site_name" content="Symplectic Integrator on GPUs" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Quick Reference" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"Demonstrating mathematical integrity under GPU parallelization and reduced precision.","headline":"Quick Reference","url":"/DOCKER_QUICK_REFERENCE.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=3866f225d98a6c78601d54880f9b5186278e53d4">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+    <script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    }
+  };
+</script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Symplectic Integrator on GPUs</a></h1>
+
+        
+
+        <p>Demonstrating mathematical integrity under GPU parallelization and reduced precision.</p>
+
+        
+        <p class="view"><a href="https://github.com/OleBo/SymplecticIntegrator">View the Project on GitHub <small>OleBo/SymplecticIntegrator</small></a></p>
+        
+
+        
+
+        
+        <nav>
+  <ul>
+    
+    
+      
+    
+      
+    
+      
+        <li>
+          <a href="/">Home</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/symplectic_integrator_documentation.html">Mathematical Foundations</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/benchmark_experiment_documentation.html">Benchmark Experiments</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/cuda_implementation_documentation.html">CUDA Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/ARCHITECTURE.html">Architecture & Implementation</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/TODO.html">ToDo</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/QUICKSTART.html">Quick Start</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/SUMMARY.html">Executive Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/README_CONTAINERIZATION.html">Containerization</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/CONTAINERIZATION_COMPLETE.html">Containerization Full Summary</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER.html">Docker Setup</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/DOCKER_QUICK_REFERENCE.html">Quick Reference</a>
+        </li>
+      
+    
+      
+        <li>
+          <a href="/MANIFEST.html">Manifest</a>
+        </li>
+      
+    
+  </ul>
+</nav>
+      </header>
+      <section>
+
+      <h1 id="docker-quick-reference-card">Docker Quick Reference Card</h1>
+
+<h2 id="-essential-commands">🐳 Essential Commands</h2>
+
+<h3 id="build">Build</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Standard build</span>
+docker build <span class="nt">-t</span> symplectic-integrator <span class="nb">.</span>
+
+<span class="c"># Optimized multi-stage build</span>
+docker build <span class="nt">-f</span> Dockerfile.multistage <span class="nt">-t</span> symplectic-integrator:slim <span class="nb">.</span>
+
+<span class="c"># With specific tag</span>
+docker build <span class="nt">-t</span> symplectic-integrator:v1.0 <span class="nb">.</span>
+
+<span class="c"># Using helper script</span>
+./scripts/docker-build.sh latest
+</code></pre></div></div>
+
+<h3 id="run">Run</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Basic run</span>
+docker run symplectic-integrator
+
+<span class="c"># Interactive bash</span>
+docker run <span class="nt">-it</span> symplectic-integrator bash
+
+<span class="c"># With GPU</span>
+docker run <span class="nt">--gpus</span> all symplectic-integrator
+
+<span class="c"># With volume mounts</span>
+docker run <span class="nt">-v</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>/data:/app/data symplectic-integrator
+
+<span class="c"># Mount both data and notebooks</span>
+docker run <span class="nt">-it</span> <span class="se">\</span>
+  <span class="nt">-v</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>/data:/app/data <span class="se">\</span>
+  <span class="nt">-v</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>/notebooks:/app/notebooks <span class="se">\</span>
+  symplectic-integrator bash
+
+<span class="c"># Using helper script</span>
+./scripts/docker-run.sh <span class="s2">"python src/cpu/benchmark.py"</span>
+</code></pre></div></div>
+
+<h2 id="-docker-compose">🔧 Docker Compose</h2>
+
+<h3 id="services">Services</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># CPU benchmark</span>
+docker-compose run symplectic-cpu bash
+
+<span class="c"># GPU version</span>
+docker-compose run symplectic-gpu bash
+
+<span class="c"># Jupyter notebook</span>
+docker-compose up notebook
+<span class="c"># Open http://localhost:8888</span>
+
+<span class="c"># All services</span>
+docker-compose up
+
+<span class="c"># Stop all</span>
+docker-compose down
+</code></pre></div></div>
+
+<h2 id="-common-workflows">🚀 Common Workflows</h2>
+
+<h3 id="run-benchmark">Run Benchmark</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Option 1: Direct docker</span>
+docker run symplectic-integrator python src/cpu/benchmark.py
+
+<span class="c"># Option 2: Compose</span>
+docker-compose run symplectic-cpu python src/cpu/benchmark.py
+
+<span class="c"># Option 3: Helper script</span>
+./scripts/docker-run.sh <span class="s2">"python src/cpu/benchmark.py"</span>
+</code></pre></div></div>
+
+<h3 id="gpu-testing">GPU Testing</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Test GPU support</span>
+./scripts/docker-gpu-test.sh
+
+<span class="c"># Run GPU example</span>
+docker run <span class="nt">--gpus</span> all symplectic-integrator ./build/example
+
+<span class="c"># Check CUDA version</span>
+docker run <span class="nt">--gpus</span> all symplectic-integrator nvcc <span class="nt">--version</span>
+</code></pre></div></div>
+
+<h3 id="development">Development</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Interactive development</span>
+docker run <span class="nt">-it</span> <span class="se">\</span>
+  <span class="nt">-v</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>:/app <span class="se">\</span>
+  symplectic-integrator <span class="se">\</span>
+  bash
+
+<span class="c"># Run tests</span>
+docker run symplectic-integrator pytest
+
+<span class="c"># Run with specific Python version</span>
+docker build <span class="nt">-t</span> symplectic:py311 <span class="se">\</span>
+  <span class="nt">--build-arg</span> <span class="nv">PYTHON_VERSION</span><span class="o">=</span>3.11 <span class="nb">.</span>
+</code></pre></div></div>
+
+<h2 id="-maintenance">🧹 Maintenance</h2>
+
+<h3 id="images">Images</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># List images</span>
+docker images | <span class="nb">grep </span>symplectic
+
+<span class="c"># Remove image</span>
+docker rmi symplectic-integrator:latest
+
+<span class="c"># Remove all symplectic images</span>
+docker-compose down
+./scripts/docker-clean.sh
+</code></pre></div></div>
+
+<h3 id="containers">Containers</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># List running</span>
+docker ps
+
+<span class="c"># List all</span>
+docker ps <span class="nt">-a</span>
+
+<span class="c"># Stop container</span>
+docker stop &lt;container-id&gt;
+
+<span class="c"># Remove container</span>
+docker <span class="nb">rm</span> &lt;container-id&gt;
+
+<span class="c"># Cleanup all</span>
+docker container prune
+</code></pre></div></div>
+
+<h3 id="space">Space</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Check disk usage</span>
+docker system <span class="nb">df</span>
+
+<span class="c"># Remove unused images</span>
+docker image prune <span class="nt">-a</span>
+
+<span class="c"># Full cleanup</span>
+docker system prune <span class="nt">-a</span>
+</code></pre></div></div>
+
+<h2 id="-monitoring">📊 Monitoring</h2>
+
+<h3 id="resource-usage">Resource Usage</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Real-time stats</span>
+docker stats
+
+<span class="c"># Specific container</span>
+docker stats &lt;container-id&gt;
+
+<span class="c"># Log output</span>
+docker logs &lt;container-id&gt;
+docker logs <span class="nt">-f</span> &lt;container-id&gt;
+</code></pre></div></div>
+
+<h3 id="inspect">Inspect</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Image info</span>
+docker inspect symplectic-integrator
+
+<span class="c"># Image history</span>
+docker <span class="nb">history </span>symplectic-integrator
+
+<span class="c"># Image layers</span>
+docker inspect <span class="nt">--format</span><span class="o">=</span><span class="s1">''</span> symplectic-integrator | <span class="nb">tr</span> <span class="s1">','</span> <span class="s1">'\n'</span>
+</code></pre></div></div>
+
+<h2 id="-advanced">🔌 Advanced</h2>
+
+<h3 id="environment-variables">Environment Variables</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Pass environment variables</span>
+docker run <span class="nt">-e</span> <span class="nv">VAR</span><span class="o">=</span>value symplectic-integrator
+
+<span class="c"># From file</span>
+docker run <span class="nt">--env-file</span> .env.docker symplectic-integrator
+</code></pre></div></div>
+
+<h3 id="build-arguments">Build Arguments</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Custom CUDA version</span>
+docker build <span class="se">\</span>
+  <span class="nt">--build-arg</span> <span class="nv">CUDA_VERSION</span><span class="o">=</span>12.0 <span class="se">\</span>
+  <span class="nt">-t</span> symplectic-integrator <span class="nb">.</span>
+
+<span class="c"># Custom Python version</span>
+docker build <span class="se">\</span>
+  <span class="nt">--build-arg</span> <span class="nv">PYTHON_VERSION</span><span class="o">=</span>3.11 <span class="se">\</span>
+  <span class="nt">-t</span> symplectic-integrator <span class="nb">.</span>
+</code></pre></div></div>
+
+<h3 id="network">Network</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Port mapping</span>
+docker run <span class="nt">-p</span> 8888:8888 symplectic-integrator
+
+<span class="c"># Custom network</span>
+docker network create symplectic-net
+docker run <span class="nt">--network</span> symplectic-net symplectic-integrator
+</code></pre></div></div>
+
+<h2 id="-troubleshooting">🆘 Troubleshooting</h2>
+
+<h3 id="gpu-issues">GPU Issues</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Verify nvidia-docker</span>
+which nvidia-docker
+
+<span class="c"># Test GPU</span>
+nvidia-docker run <span class="nt">--rm</span> nvidia/cuda nvidia-smi
+
+<span class="c"># Check docker-gpu plugin</span>
+docker run <span class="nt">--rm</span> <span class="nt">--gpus</span> all ubuntu nvidia-smi
+</code></pre></div></div>
+
+<h3 id="build-issues">Build Issues</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Clear build cache</span>
+docker build <span class="nt">--no-cache</span> <span class="nt">-t</span> symplectic-integrator <span class="nb">.</span>
+
+<span class="c"># Check Dockerfile</span>
+docker build <span class="nt">--progress</span><span class="o">=</span>plain <span class="nt">-t</span> symplectic-integrator <span class="nb">.</span>
+
+<span class="c"># Verbose output</span>
+docker build <span class="nt">-t</span> symplectic-integrator <span class="nb">.</span> <span class="nt">-v</span>
+</code></pre></div></div>
+
+<h3 id="runtime-issues">Runtime Issues</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Check logs</span>
+docker logs &lt;container-id&gt;
+
+<span class="c"># Interactive debugging</span>
+docker run <span class="nt">-it</span> symplectic-integrator bash
+
+<span class="c"># Check resource limits</span>
+docker stats
+
+<span class="c"># Increase memory</span>
+docker run <span class="nt">-m</span> 8g symplectic-integrator
+</code></pre></div></div>
+
+<h2 id="-performance-tips">📈 Performance Tips</h2>
+
+<h3 id="build-optimization">Build Optimization</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Use docker buildx</span>
+docker buildx build <span class="nt">--platform</span> linux/amd64,linux/arm64 <span class="nb">.</span>
+
+<span class="c"># Multi-stage (already in use)</span>
+docker build <span class="nt">-f</span> Dockerfile.multistage <span class="nb">.</span>
+
+<span class="c"># Cache layers</span>
+docker build <span class="nt">--cache-from</span> symplectic-integrator:latest <span class="nb">.</span>
+</code></pre></div></div>
+
+<h3 id="runtime-optimization">Runtime Optimization</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Use runsc (gVisor)</span>
+docker run <span class="nt">--runtime</span><span class="o">=</span>runsc symplectic-integrator
+
+<span class="c"># Limit resources</span>
+docker run <span class="nt">-m</span> 4g <span class="nt">--cpus</span><span class="o">=</span>2 symplectic-integrator
+
+<span class="c"># CPU affinity</span>
+docker run <span class="nt">--cpuset-cpus</span><span class="o">=</span><span class="s2">"0,1"</span> symplectic-integrator
+</code></pre></div></div>
+
+<h2 id="-distribution">🌐 Distribution</h2>
+
+<h3 id="docker-hub">Docker Hub</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Login</span>
+docker login
+
+<span class="c"># Tag</span>
+docker tag symplectic-integrator myuser/symplectic-integrator
+
+<span class="c"># Push</span>
+docker push myuser/symplectic-integrator
+
+<span class="c"># Pull</span>
+docker pull myuser/symplectic-integrator
+</code></pre></div></div>
+
+<h3 id="private-registry">Private Registry</h3>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Tag</span>
+docker tag symplectic-integrator myregistry.azurecr.io/symplectic
+
+<span class="c"># Push</span>
+docker push myregistry.azurecr.io/symplectic
+
+<span class="c"># Pull</span>
+docker pull myregistry.azurecr.io/symplectic
+</code></pre></div></div>
+
+<h2 id="-checklists">📋 Checklists</h2>
+
+<h3 id="pre-deployment">Pre-deployment</h3>
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Image builds without errors</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />GPU test passes</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Data mounts correctly</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Notebooks run in container</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Benchmarks produce expected output</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Image size is reasonable (&lt;5GB)</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />All dependencies are pinned</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Documentation is complete</li>
+</ul>
+
+<h3 id="before-production">Before Production</h3>
+<ul class="task-list">
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Security scan: <code class="language-plaintext highlighter-rouge">docker scan symplectic-integrator</code></li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Image tested on target hardware</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Resource limits defined</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Logging configured</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Monitoring configured</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Backup strategy planned</li>
+  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Release notes prepared</li>
+</ul>
+
+<hr />
+
+<p><strong>For detailed documentation, see <a href="/DOCKER.html">DOCKER.md</a></strong></p>
+
+
+      </section>
+      <footer>
+        
+        <p>This project is maintained by <a href="https://github.com/OleBo">OleBo</a></p>
+        
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>
