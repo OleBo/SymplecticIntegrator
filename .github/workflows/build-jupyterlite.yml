@@ -28,9 +28,10 @@ jobs:
           jupyter lite build --contents docs/notebooks --output-dir dist/lite
 
       - name: Set up Ruby 💎
-        uses: actions/setup-ruby@v1
+        uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: '3.1' # Quote version numbers to ensure correct parsing
+          bundler-cache: true # Recommended: automatically runs 'bundle install' and caches gems
 
       - name: Build Jekyll 🧪
         run: |

@@ -57,7 +57,7 @@ Speedup: 100-1000x
 
 When simulating the **Hénon-Heiles chaotic system** for 10,000 timesteps:
 
-[![Energy Conservation Comparison](assets/images/energy_conservation_comparison.png)](https://olebo.github.io/SymplecticIntegrator/jupyterlite/lab/index.html?path=energy_conservation_comparison.ipynb)
+[![Energy Conservation Comparison](assets/images/energy_conservation_comparison.png)](https://olebo.github.io/symplecticintegrator/lite/lab/index.html?path=energy_conservation_comparison.ipynb)
 
 
 Here's what the results indicate:

@@ -1,5 +1,7 @@
 # 🚀 GPU-Accelerated Symplectic Integrator
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://olebo.github.io/SymplecticIntegrator) 
+[![JupyterLite][def]](https://olebo.github.io/symplecticintegrator/lite/index.html)
+![Jekyll][def]
 [![CI](https://github.com/OleBo/SymplecticIntegrator/actions/workflows/ci.yml/badge.svg)](https://github.com/OleBo/SymplecticIntegrator/actions/workflows/ci.yml)
 ## Structure-Preserving Simulation on GPUs
 
@@ -354,3 +356,6 @@ make
 ---
 
 **Built to demonstrate that mathematical rigor and GPU acceleration aren't just compatible—they're powerful together.**
+
+
+[def]: https://shields.io
