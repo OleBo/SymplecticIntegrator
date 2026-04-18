@@ -22,11 +22,6 @@ jobs:
         run: |
           pip install jupyterlite jupyterlab jupyterlite-pyodide-kernel numpy scipy sympy matplotlib
 
-      - name: Build JupyterLite 🏗️
-        run: |
-          # Builds notebooks from your /docs/notebooks folder into a /dist directory
-          jupyter lite build --contents docs/notebooks --output-dir dist/lite
-
       - name: Set up Ruby 💎
         uses: ruby/setup-ruby@v1
         with:
@@ -39,12 +34,16 @@ jobs:
           cd docs
           bundle install
           # Build the site into the dist directory at the root level
-          # The --no-clean flag is vital so it doesn't delete the /lite folder 
           # created in the previous step
-          bundle exec jekyll build --destination ../dist --no-clean
+          bundle exec jekyll build --destination ../dist
           # Important: tells GitHub NOT to run Jekyll a second time on the server
           touch ../dist/.nojekyll 
 
+      - name: Build JupyterLite 🏗️
+        run: |
+          # Builds notebooks from your /docs/notebooks folder into a /dist directory
+          jupyter lite build --contents docs/notebooks --output-dir dist/lite
+  
       - name: Deploy to GitHub Pages 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
